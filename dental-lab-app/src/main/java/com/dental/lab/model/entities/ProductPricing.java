@@ -2,7 +2,9 @@ package com.dental.lab.model.entities;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.Instant;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -26,7 +28,7 @@ public class ProductPricing {
 	@Column(name = "price")
 	private BigDecimal price;
 	
-	@ManyToOne
+	@ManyToOne(cascade = CascadeType.PERSIST)
 	@JoinColumn(name = "product_id")
 	private Product product;
 	
@@ -38,6 +40,18 @@ public class ProductPricing {
 	
 	@Column(name = "note")
 	private String note;
+	
+	public ProductPricing() {
+		
+	}
+	
+	public ProductPricing(BigDecimal price) {
+		this.price = price;
+		// TODO: get right date
+		Instant now = Instant.now();
+		System.out.println(now.toString());
+		this.startingDate = Timestamp.from(now);
+	}
 
 	public Long getId() {
 		return id;

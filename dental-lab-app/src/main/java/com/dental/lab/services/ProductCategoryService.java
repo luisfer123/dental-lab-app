@@ -31,6 +31,12 @@ public class ProductCategoryService {
 	}
 	
 	@Transactional(readOnly = true)
+	public ProductCategory findRootCategory() {
+		return categoryRepo.findRootCategory()
+				.orElseThrow(() -> new EntityNotFoundException("Root CategoryProduct was not found"));
+	}
+	
+	@Transactional(readOnly = true)
 	public List<ProductCategory> findByProduct(Product product) {
 		
 		return categoryRepo.findProductCategoriesByProductId(product.getId());

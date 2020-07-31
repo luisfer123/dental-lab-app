@@ -28,6 +28,8 @@
 
 <div class="container my-5">
 
+	<h1 class="h1 my5">Productos</h1>
+
 	<div class="row mx-auto">
 		<div class="col-md-4 text-center">
 			<%@ include file="./product-layer/product-sidebar.jsp" %>

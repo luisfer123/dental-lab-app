@@ -7,9 +7,6 @@
 
 	<nav aria-label="breadcrumb">
 		<ol class="breadcrumb">
-			<li class="breadcrumb-item active" aria-current="page">
-				<a href="<c:url value="/products/category-list" />">Todos los productos</a>				
-			</li>
 			<c:forEach items="${categoryPath }" var="category">
 				<li class="breadcrumb-item active" aria-current="page">
 					<a href="<c:url value="/products/${category.id }/list" />">${category.name }</a>				

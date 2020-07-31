@@ -27,6 +27,10 @@
 
 <div class="container my-5">
 
+	<h1 class="h1 my-5 p-3 border round text-center custom-background">
+		<a href="<c:url value="/products/category-list" />">Lista de Productos</a>
+	</h1>
+
 	<div class="row mx-auto">
 		<div class="col-md-4 text-center">
 			<%@ include file="./product-layer/product-sidebar.jsp" %>

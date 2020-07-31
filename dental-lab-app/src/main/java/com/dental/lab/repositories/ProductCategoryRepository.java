@@ -14,6 +14,9 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
 	@Query("select c from ProductCategory c join c.products p where p.id = :productId")
 	List<ProductCategory> findProductCategoriesByProductId(@Param("productId") Long productId);
 	
+	@Query("select c from ProductCategory c where c.parent = null")
+	Optional<ProductCategory> findRootCategory();
+	
 	Optional<ProductCategory> findByName(String name);
 
 }
