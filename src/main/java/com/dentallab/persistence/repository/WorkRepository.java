@@ -1,0 +1,60 @@
+package com.dentallab.persistence.repository;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
+
+import com.dentallab.persistence.entity.WorkEntity;
+
+@Repository
+public interface WorkRepository
+        extends JpaRepository<WorkEntity, Long>,
+                JpaSpecificationExecutor<WorkEntity> {
+
+    // ---------------------------------------------------------
+    //  LOOKUP-SAFE METHODS
+    // ---------------------------------------------------------
+
+    /**
+     * Checks if a work exists by id and work family code.
+     * Example usage:
+     * existsByIdAndWorkFamily_Code(10L, "FIXED_PROSTHESIS")
+     */
+    boolean existsByIdAndWorkFamily_Code(Long id, String familyCode);
+
+    /**
+     * Checks if a work exists by id and type code.
+     * Example usage:
+     * existsByIdAndType_Code(10L, "CROWN")
+     */
+    boolean existsByIdAndType_Code(Long id, String typeCode);
+
+    /**
+     * Count works by type code.
+     * Example usage:
+     * countByType_Code("BRIDGE")
+     */
+    long countByType_Code(String typeCode);
+
+    // ---------------------------------------------------------
+    // OPTIONAL FILTER METHODS (recommended)
+    // ---------------------------------------------------------
+    /**
+     * Get all works for a family.
+     */
+    List<WorkEntity> findByWorkFamily_Code(String familyCode);
+
+    /**
+     * Get all works for a type.
+     */
+    List<WorkEntity> findByType_Code(String typeCode);
+
+    /**
+     * Filter by workflow status (work.status column).
+     * This one stays a simple string because work.status is not an entity.
+     */
+    List<WorkEntity> findByStatus_Code(String statusCode);
+    
+    }

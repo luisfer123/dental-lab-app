@@ -1,0 +1,30 @@
+spring:
+  profiles:
+    active: dev
+  jpa:
+    hibernate:
+      ddl-auto: none    # You’re using an existing schema
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+
+# =====================================================
+# SECURITY / JWT CONFIGURATION
+# =====================================================
+security:
+  jwt:
+    # 256-bit key (Base64 or plain text)
+    secret: "base64:EFSt9OcC8XuLjnroV0/0Eltkyc4mZORna4VAV49nm8I="
+
+    # Optional metadata for JwtUtil
+    issuer: "com.dentallab"
+    audience: "web"
+
+    # Token lifetimes (ISO-8601 durations)
+    access-ttl: PT1M         # 15 minutes
+    refresh-ttl: P7D          # 7 days
+
+    # Allowed clock skew when validating tokens
+    clock-skew: PT30S         # 30 seconds
