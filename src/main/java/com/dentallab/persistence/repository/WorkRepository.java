@@ -2,8 +2,11 @@ package com.dentallab.persistence.repository;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.dentallab.persistence.entity.WorkEntity;
@@ -56,5 +59,22 @@ public interface WorkRepository
      * This one stays a simple string because work.status is not an entity.
      */
     List<WorkEntity> findByStatus_Code(String statusCode);
+    
+    /**
+     * Page only Work IDs using Specifications.
+     */
+    @Query("SELECT w.id FROM WorkEntity w")
+    Page<Long> findIds(Pageable pageable);
+
+    /**
+     * Load Work + Client using join fetch.
+     */
+    @Query("""
+        SELECT w
+        FROM WorkEntity w
+        LEFT JOIN FETCH w.client
+        WHERE w.id IN :ids
+        """)
+    List<WorkEntity> findAllWithClientByIdIn(List<Long> ids);
     
     }

@@ -35,6 +35,8 @@ public class WorkModel extends RepresentationModel<WorkModel> {
 
     private Long clientId;
     private Long orderId;
+    
+    private ClientSummaryModel client;
 
     // ==========================================================
     // GETTERS & SETTERS
@@ -78,4 +80,7 @@ public class WorkModel extends RepresentationModel<WorkModel> {
 
     public Long getOrderId() { return orderId; }
     public void setOrderId(Long orderId) { this.orderId = orderId; }
+    
+    public ClientSummaryModel getClient() { return client; }
+    public void setClient(ClientSummaryModel client) { this.client = client; }
 }

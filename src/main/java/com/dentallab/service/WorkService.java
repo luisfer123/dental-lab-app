@@ -91,4 +91,15 @@ public interface WorkService {
             String family,
             List<String> categories
     );
+    
+    Page<WorkModel> getFilteredWithClients(
+            int page,
+            int size,
+            String[] sortParams,
+            String typeCode,
+            String statusCode,
+            Long clientId,
+            String familyCode,
+            List<String> categories
+    );
 }

@@ -52,7 +52,7 @@ public class WorkController {
                 page, size, sort, type, family, status, clientId, categories);
 
         Page<WorkModel> worksPage =
-                workService.getFiltered(page, size, sortParams, type, status, clientId, family, categories);
+                workService.getFilteredWithClients(page, size, sortParams, type, status, clientId, family, categories);
 
         return ResponseEntity.ok(worksPage);
     }

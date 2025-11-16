@@ -14,5 +14,6 @@ logging:
     root: INFO
     com.dentallab: INFO
     com.dentallab.api.controller.WorkController: DEBUG
+    com.dentallab.service.impl.WorkServiceImpl: DEBUG
 jwt:
   log-tokens: true
