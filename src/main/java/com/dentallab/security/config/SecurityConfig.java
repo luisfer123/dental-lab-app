@@ -44,7 +44,8 @@ public class SecurityConfig {
     /**
      * Core filter chain definition.
      */
-    @Bean
+    @SuppressWarnings("removal")
+	@Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             // === Core security settings ===
@@ -91,7 +92,8 @@ public class SecurityConfig {
     /**
      * Authentication provider: DAO-based with BCrypt.
      */
-    @Bean
+    @SuppressWarnings("deprecation")
+	@Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);

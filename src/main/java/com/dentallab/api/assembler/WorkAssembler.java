@@ -7,6 +7,7 @@ import org.springframework.hateoas.server.mvc.RepresentationModelAssemblerSuppor
 import org.springframework.stereotype.Component;
 
 import com.dentallab.api.controller.WorkController;
+import com.dentallab.api.model.ClientSummaryModel;
 import com.dentallab.api.model.WorkModel;
 import com.dentallab.persistence.entity.WorkEntity;
 import com.dentallab.service.LookupService;
@@ -54,6 +55,24 @@ public class WorkAssembler extends RepresentationModelAssemblerSupport<WorkEntit
         // HATEOAS links
         model.add(linkTo(methodOn(WorkController.class).getById(entity.getId())).withSelfRel());
         model.add(linkTo(methodOn(WorkController.class).getAll(0, 10, "createdAt,desc")).withRel("collection"));
+        
+     // ------------------------------------
+        // Embedded Client summary
+        // ------------------------------------
+        if (entity.getClient() != null) {
+        	ClientSummaryModel clientModel = new ClientSummaryModel();
+        	clientModel.setId(entity.getClient().getId());
+        	clientModel.setDisplayName(entity.getClient().getDisplayName());
+        	clientModel.setFirstName(entity.getClient().getFirstName());
+        	clientModel.setSecondName(entity.getClient().getSecondName());
+        	clientModel.setLastName(entity.getClient().getLastName());
+        	clientModel.setSecondLastName(entity.getClient().getSecondLastName());
+        	clientModel.setPrimaryEmail(entity.getClient().getPrimaryEmail());
+        	clientModel.setPrimaryPhone(entity.getClient().getPrimaryPhone());
+        	clientModel.setPrimaryAddress(entity.getClient().getPrimaryAddress());
+        	clientModel.setActive(entity.getClient().getActive());
+        	model.setClient(clientModel);
+        }
 
         return model;
     }
