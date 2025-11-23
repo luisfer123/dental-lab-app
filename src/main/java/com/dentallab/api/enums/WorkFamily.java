@@ -5,12 +5,24 @@ package com.dentallab.api.enums;
  * Each corresponds to a specific extension table (CROWN, BRIDGE, etc.).
  */
 public enum WorkFamily {
-    CROWN,
-    BRIDGE,
-    INLAY,
-    ONLAY,
-    VENEER,
-    IMPLANT;
+
+    CROWN("Corona"),
+    BRIDGE("Puente"),
+    INLAY("Incrustación"),
+    ONLAY("Onlay"),
+    VENEER("Carilla"),
+    IMPLANT("Implante");
+
+    private final String label;
+
+    WorkFamily(String label) {
+        this.label = label;
+    }
+
+    /** Human readable Spanish label */
+    public String getLabel() {
+        return label;
+    }
 
     /**
      * Returns a safe enum value from a string, case-insensitive.
@@ -24,5 +36,11 @@ public enum WorkFamily {
             }
         }
         throw new IllegalArgumentException("Unknown WorkFamily: " + value);
+    }
+
+    /** Optional: return the Spanish label instead of enum name */
+    @Override
+    public String toString() {
+        return label;
     }
 }

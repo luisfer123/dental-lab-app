@@ -1112,24 +1112,26 @@ DELIMITER ;
 
 INSERT INTO work_status_ref (code, label, sequence_order) VALUES
 ('RECEIVED', 'Recibido', 1),
-('ASSIGNED', 'Asignado', 2),
-('IN_PROGRESS', 'En progreso', 3),
-('FINISHED', 'Terminado', 4),
-('DELIVERING', 'Listo para entregar', 5),
-('DELIVERED', 'Entregado', 6);
+('PENDING', 'Pendiente', 2),
+('ASSIGNED', 'Asignado', 3),
+('IN_PROGRESS', 'En proceso', 4),
+('FINISHED', 'Terminado', 5),
+('DELIVERING', 'Listo para entregar', 6),
+('DELIVERED', 'Entregado', 7),
+('COMPLETED', 'Completado', 8);
 
 INSERT INTO work_family_ref (code, label) VALUES
-('FIXED_PROSTHESIS', 'Fixed Prosthesis'),
-('REMOVABLE_PROSTHESIS', 'Removable Prosthesis'),
+('FIXED_PROSTHESIS', 'Protesis fija'),
+('REMOVABLE_PROSTHESIS', 'Protesis Removible'),
 ('IMPLANT_PROSTHESIS', 'Implant Prosthesis'),
 ('ORTHODONTICS', 'Orthodontics'),
 ('OTHER', 'Other');
 
 INSERT INTO work_type_ref (code, label, family_code) VALUES
 -- Fixed prosthesis
-('CROWN', 'Crown', 'FIXED_PROSTHESIS'),
-('BRIDGE', 'Bridge', 'FIXED_PROSTHESIS'),
-('INLAY', 'Inlay / Onlay', 'FIXED_PROSTHESIS'),
+('CROWN', 'Corona', 'FIXED_PROSTHESIS'),
+('BRIDGE', 'Puente', 'FIXED_PROSTHESIS'),
+('INLAY', 'Incrustación', 'FIXED_PROSTHESIS'),
 
 -- Removable
 ('DENTURE_PARTIAL', 'Partial Denture', 'REMOVABLE_PROSTHESIS'),

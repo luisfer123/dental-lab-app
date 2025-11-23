@@ -14,21 +14,23 @@ public class WorkModel extends RepresentationModel<WorkModel> {
 
     /** Code from work_type_ref (e.g., "CROWN", "BRIDGE") */
     private String type;
+    /** Human-readable label for the work type (from lookup) */
+    private String typeLabel;
 
     /** Code from work_family_ref (e.g., "FIXED_PROSTHESIS") */
     private String workFamily;
-
     /** Human-readable label for the work family (from lookup) */
     private String familyLabel;
-
-    /** Human-readable label for the work type (from lookup) */
-    private String typeLabel;
+    
+    /** Code from work_status_ref (e.g., "PENDING", "COMPLETED") */
+    private String status;
+    /** Human-readable label for the work status (from lookup) */
+    private String statusLabel;
 
     /** Optional text description (e.g., "Stratified disilicate crown") */
     private String description;
 
     private String shade;
-    private String status;
     private String notes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -56,6 +58,9 @@ public class WorkModel extends RepresentationModel<WorkModel> {
 
     public String getTypeLabel() { return typeLabel; }
     public void setTypeLabel(String typeLabel) { this.typeLabel = typeLabel; }
+    
+    public String getStatusLabel() { return statusLabel; }
+    public void setStatusLabel(String statusLabel) { this.statusLabel = statusLabel; }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }

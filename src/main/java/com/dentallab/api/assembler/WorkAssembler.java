@@ -36,7 +36,6 @@ public class WorkAssembler extends RepresentationModelAssemblerSupport<WorkEntit
         model.setId(entity.getId());
         model.setDescription(entity.getDescription());
         model.setShade(entity.getShade());
-        model.setStatus(entity.getStatus() != null ? entity.getStatus().getCode() : null);
         model.setNotes(entity.getNotes());
         model.setCreatedAt(entity.getCreatedAt());
         model.setUpdatedAt(entity.getUpdatedAt());
@@ -46,8 +45,11 @@ public class WorkAssembler extends RepresentationModelAssemblerSupport<WorkEntit
         model.setType(entity.getType() != null ? entity.getType().getCode() : null);
 
         // Labels
-        model.setFamilyLabel(lookupService.getFamilyLabel(entity.getWorkFamily()));
-        model.setTypeLabel(lookupService.getTypeLabel(entity.getType()));
+        model.setFamilyLabel(entity.getWorkFamily() != null ? entity.getWorkFamily().getLabel() : null);
+        model.setTypeLabel(entity.getType() != null ? entity.getType().getLabel() : null);
+        
+        model.setStatus(entity.getStatus() != null ? entity.getStatus().getCode() : null);
+        model.setStatusLabel(entity.getStatus() != null ? entity.getStatus().getLabel() : null);
 
         model.setClientId(entity.getClient() != null ? entity.getClient().getId() : null);
         model.setOrderId(entity.getOrder() != null ? entity.getOrder().getId() : null);
