@@ -77,4 +77,16 @@ public class FullWorkModel extends RepresentationModel<FullWorkModel> {
 
     public String getTypeLabel() { return typeLabel; }
     public void setTypeLabel(String typeLabel) { this.typeLabel = typeLabel; }
+    
+    @Override
+    public String toString() {
+		return "FullWorkModel{" +
+				"base=" + base +
+				", extension=" + extension +
+				", workFamily='" + workFamily + '\'' +
+				", type='" + type + '\'' +
+				", familyLabel='" + familyLabel + '\'' +
+				", typeLabel='" + typeLabel + '\'' +
+				'}';
+	}
 }

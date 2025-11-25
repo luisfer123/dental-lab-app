@@ -1,12 +1,15 @@
 package com.dentallab.api.assembler;
 
-import com.dentallab.api.controller.WorkController;
-import com.dentallab.api.model.BridgeWorkModel;
-import com.dentallab.persistence.entity.BridgeWorkEntity;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
 import org.springframework.hateoas.server.mvc.RepresentationModelAssemblerSupport;
 import org.springframework.stereotype.Component;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+import com.dentallab.api.controller.WorkController;
+import com.dentallab.api.model.BridgeWorkModel;
+import com.dentallab.persistence.entity.BridgeWorkEntity;
+import com.dentallab.persistence.entity.WorkEntity;
 
 /**
  * Converts BridgeWorkEntity ↔ BridgeWorkModel and adds HATEOAS links.
@@ -58,9 +61,13 @@ public class BridgeWorkAssembler extends RepresentationModelAssemblerSupport<Bri
     /* ==========================================================
        MODEL → ENTITY (for creates/updates)
        ========================================================== */
-    public BridgeWorkEntity toEntity(BridgeWorkModel model) {
+    public BridgeWorkEntity toEntity(BridgeWorkModel model, WorkEntity work) {
         BridgeWorkEntity entity = new BridgeWorkEntity();
+        
+        entity.setWork(work);
+        
         copyCommonFields(model, entity);
+        
         return entity;
     }
 

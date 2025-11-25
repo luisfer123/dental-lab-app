@@ -2,7 +2,9 @@ package com.dentallab.api.model;
 
 import java.time.OffsetDateTime;
 
-public class ClientSummaryModel {
+import org.springframework.hateoas.RepresentationModel;
+
+public class ClientSummaryModel extends RepresentationModel<ClientSummaryModel> {
 	
 	private Long id;
     private String displayName;
@@ -30,5 +32,33 @@ public class ClientSummaryModel {
     public Boolean getActive() { return active; } public void setActive(Boolean active) { this.active = active; }
     public OffsetDateTime getCreatedAt() { return createdAt; } public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
     public OffsetDateTime getUpdatedAt() { return updatedAt; } public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
+    
+    @Override
+    public String toString() {
+		return "ClientSummaryModel{" +
+				"id=" + id +
+				", displayName='" + displayName + '\'' +
+				", firstName='" + firstName + '\'' +
+				", secondName='" + secondName + '\'' +
+				", lastName='" + lastName + '\'' +
+				", secondLastName='" + secondLastName + '\'' +
+				", primaryEmail='" + primaryEmail + '\'' +
+				", primaryPhone='" + primaryPhone + '\'' +
+				", primaryAddress='" + primaryAddress + '\'' +
+				", active=" + active +
+				", createdAt=" + createdAt +
+				", updatedAt=" + updatedAt +
+				'}';
+	}
+    
+    @Override
+    public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		ClientSummaryModel that = (ClientSummaryModel) o;
+
+		return id != null ? id.equals(that.id) : that.id == null;
+    }
 
 }

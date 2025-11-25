@@ -232,15 +232,18 @@ CREATE TABLE material (
 CREATE TABLE work_order (
   order_id      BIGINT PRIMARY KEY AUTO_INCREMENT,
   client_id     BIGINT NOT NULL,
-  date_received DATE NOT NULL,
-  due_date      DATE,
-  status        VARCHAR(50),
+  date_received TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  due_date      TIMESTAMP, -- Date it should be delivered to the client
+  delivered_at TIMESTAMP NULL, -- Date the order actualy was delivered to the client
+  status        VARCHAR(50) DEFAULT 'RECEIVED',
   notes         TEXT,
-  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (client_id) REFERENCES client(client_id) ON DELETE CASCADE
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Date the order is created in the system
+  updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Last update in the system
+  FOREIGN KEY (status) REFERENCES work_status_ref(code) ON DELETE RESTRICT,
+  FOREIGN KEY (client_id) REFERENCES client(client_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB COMMENT='Groups one or more works sent by a client in a single submission or pickup.';
 CREATE INDEX idx_order_client ON work_order(client_id);
+CREATE INDEX idx_order_due_date ON work_order(due_date);
 
 CREATE TABLE work (
   work_id     BIGINT PRIMARY KEY AUTO_INCREMENT,

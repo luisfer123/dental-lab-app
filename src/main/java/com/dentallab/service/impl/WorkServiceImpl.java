@@ -5,6 +5,7 @@ import static com.dentallab.persistence.spec.WorkSpecifications.hasStatus;
 import static com.dentallab.persistence.spec.WorkSpecifications.hasType;
 import static com.dentallab.persistence.spec.WorkSpecifications.hasWorkFamily;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -22,10 +23,27 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.dentallab.api.assembler.FullWorkAssembler;
 import com.dentallab.api.assembler.WorkAssembler;
+import com.dentallab.api.model.BridgeWorkModel;
+import com.dentallab.api.model.CrownWorkModel;
 import com.dentallab.api.model.FullWorkModel;
+import com.dentallab.api.model.WorkExtensionModel;
 import com.dentallab.api.model.WorkModel;
+import com.dentallab.persistence.entity.BridgeWorkEntity;
+import com.dentallab.persistence.entity.ClientEntity;
+import com.dentallab.persistence.entity.CrownWorkEntity;
 import com.dentallab.persistence.entity.WorkEntity;
+import com.dentallab.persistence.entity.WorkFamilyRefEntity;
+import com.dentallab.persistence.entity.WorkOrderEntity;
+import com.dentallab.persistence.entity.WorkTypeRefEntity;
+import com.dentallab.persistence.repository.BridgeWorkRepository;
+import com.dentallab.persistence.repository.ClientRepository;
+import com.dentallab.persistence.repository.CrownWorkRepository;
+import com.dentallab.persistence.repository.WorkFamilyRefRepository;
+import com.dentallab.persistence.repository.WorkOrderRepository;
 import com.dentallab.persistence.repository.WorkRepository;
+import com.dentallab.persistence.repository.WorkTypeRefRepository;
+import com.dentallab.service.BridgeWorkService;
+import com.dentallab.service.CrownWorkService;
 import com.dentallab.service.WorkService;
 import com.dentallab.util.PagingUtils;
 
@@ -38,17 +56,45 @@ public class WorkServiceImpl implements WorkService {
     private static final Logger log = LoggerFactory.getLogger(WorkServiceImpl.class);
 
     private final WorkRepository workRepository;
+    private final CrownWorkRepository crownRepository;
+    private final BridgeWorkRepository bridgeRepository;
+    private final ClientRepository clientRepository;
+    private final WorkTypeRefRepository workTypeRefRepository;
+    private final WorkFamilyRefRepository workFamilyRefRepository;
+    private final WorkOrderRepository orderRepository;
+    
+    private final CrownWorkService crownWorkService;
+    private final BridgeWorkService bridgeWorkService;
+    
     private final WorkAssembler workAssembler;
     private final FullWorkAssembler fullWorkAssembler;
 
     public WorkServiceImpl(
             WorkRepository workRepository,
             WorkAssembler workAssembler,
-            FullWorkAssembler fullWorkAssembler
+            FullWorkAssembler fullWorkAssembler,
+            CrownWorkRepository crownRepository,
+            BridgeWorkRepository bridgeRepository,
+            ClientRepository clientRepository,
+            WorkTypeRefRepository workTypeRefRepository,
+            WorkFamilyRefRepository workFamilyRefRepository,
+            CrownWorkService crownWorkService,
+            BridgeWorkService bridgeWorkService,
+            WorkOrderRepository orderRepository
     ) {
         this.workRepository = workRepository;
-        this.workAssembler = workAssembler;
+        this.crownRepository = crownRepository;
+        this.bridgeRepository = bridgeRepository;
+        this.clientRepository = clientRepository;
+        this.workTypeRefRepository = workTypeRefRepository;
+        this.workFamilyRefRepository = workFamilyRefRepository;
+        this.orderRepository = orderRepository;
+        
+        this.crownWorkService = crownWorkService;
+        this.bridgeWorkService = bridgeWorkService;
+        
         this.fullWorkAssembler = fullWorkAssembler;
+        this.workAssembler = workAssembler;
     }
 
     // ==========================================================
@@ -84,21 +130,126 @@ public class WorkServiceImpl implements WorkService {
         return workAssembler.toModel(entity);
     }
 
+    /**
+     * Creates a Work (base + extension) with full polymorphic handling.
+     */
     @Override
     @Transactional
-    public WorkModel create(WorkModel model) {
-        WorkEntity entity = workAssembler.toEntity(model);
+    public FullWorkModel create(FullWorkModel payload) {
 
-        WorkEntity saved = workRepository.save(entity);
+        log.info("Creating new work. Base type: {}", 
+                payload.getBase() != null ? payload.getBase().getType() : "null");
 
-        log.info("Created Work: id={}, type={}, family={}",
-                saved.getId(),
-                saved.getType() != null ? saved.getType().getCode() : null,
-                saved.getWorkFamily() != null ? saved.getWorkFamily().getCode() : null
-        );
+        if (payload.getBase() == null) {
+            throw new IllegalArgumentException("Work base cannot be null");
+        }
 
-        return workAssembler.toModel(saved);
+        WorkModel baseModel = payload.getBase();
+
+        // ---------------------------------------------------------
+        // 1) Validate client
+        // ---------------------------------------------------------
+        ClientEntity client = clientRepository.findById(baseModel.getClientId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Client not found: " + baseModel.getClientId()));
+
+        // ---------------------------------------------------------
+        // 2) Resolve or create WORK ORDER
+        // ---------------------------------------------------------
+        WorkOrderEntity order;
+
+        if (baseModel.getOrderId() != null) {
+            // order provided → validate it exists
+            order = orderRepository.findById(baseModel.getOrderId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Order not found: " + baseModel.getOrderId()));
+
+            // safety check: order must belong to same client
+            if (!Objects.equals(order.getClient().getId(), client.getId())) {
+                log.error("Order {} does not belong to client {}", 
+                          order.getId(), client.getId());
+                throw new IllegalArgumentException("Order does not belong to the client");
+            }
+
+        } else {
+            // No order → create new order automatically
+            log.info("No orderId provided. Creating new order for client {}…", client.getId());
+
+            order = new WorkOrderEntity();
+            order.setClient(client);
+            order.setDateReceived(LocalDateTime.now());
+            order.setStatus("RECEIVED");
+
+            order = orderRepository.save(order);
+
+            log.info("New order created: orderId={}", order.getId());
+        }
+
+        // ---------------------------------------------------------
+        // 3) Create base WorkEntity
+        // ---------------------------------------------------------
+        WorkEntity work = new WorkEntity();
+
+        workAssembler.updateEntityFromModel(baseModel, work);
+
+        // REQUIRED: assign FK client + order
+        work.setClient(client);
+        work.setOrder(order);
+
+        // REQUIRED: assign type lookup
+        WorkTypeRefEntity typeRef = workTypeRefRepository
+                .findByCode(baseModel.getType())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid type: " + baseModel.getType()));
+
+        work.setType(typeRef);
+
+        // REQUIRED: assign family lookup
+        WorkFamilyRefEntity familyRef = workFamilyRefRepository
+                .findByCode(baseModel.getWorkFamily())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid family: " + baseModel.getWorkFamily()));
+
+        work.setWorkFamily(familyRef);
+
+        work = workRepository.save(work);
+        log.info("Base work created. workId={} orderId={}", work.getId(), order.getId());
+
+        // ---------------------------------------------------------
+        // 4) Create extension entity (CROWN / BRIDGE)
+        // ---------------------------------------------------------
+        WorkExtensionModel ext = payload.getExtension();
+
+        if (ext != null) {
+
+            ext.setWorkId(work.getId()); // required for conversion
+
+            switch (ext.getType()) {
+
+                case "CROWN" -> {
+                    CrownWorkModel model = (CrownWorkModel) ext;
+                    CrownWorkEntity extEntity =
+                            crownWorkService.toEntity(model, work);
+                    crownRepository.save(extEntity);
+                }
+
+                case "BRIDGE" -> {
+                    BridgeWorkModel model = (BridgeWorkModel) ext;
+                    BridgeWorkEntity extEntity =
+                            bridgeWorkService.toEntity(model, work);
+                    bridgeRepository.save(extEntity);
+                }
+
+                default -> throw new IllegalArgumentException(
+                        "Unsupported extension type: " + ext.getType());
+            }
+        }
+
+        // ---------------------------------------------------------
+        // 5) Return full work model with client + order + extension
+        // ---------------------------------------------------------
+        return fullWorkAssembler.toModel(work);
     }
+
+
 
     @Override
     @Transactional

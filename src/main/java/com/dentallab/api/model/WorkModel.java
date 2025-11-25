@@ -88,4 +88,25 @@ public class WorkModel extends RepresentationModel<WorkModel> {
     
     public ClientSummaryModel getClient() { return client; }
     public void setClient(ClientSummaryModel client) { this.client = client; }
+    
+    @Override
+    public String toString() {
+    			return "WorkModel{" +
+				"id=" + id +
+				", type='" + type + '\'' +
+				", typeLabel='" + typeLabel + '\'' +
+				", workFamily='" + workFamily + '\'' +
+				", familyLabel='" + familyLabel + '\'' +
+				", status='" + status + '\'' +
+				", statusLabel='" + statusLabel + '\'' +
+				", description='" + description + '\'' +
+				", shade='" + shade + '\'' +
+				", notes='" + notes + '\'' +
+				", createdAt=" + createdAt +
+				", updatedAt=" + updatedAt +
+				", clientId=" + clientId +
+				", orderId=" + orderId +
+				", client=" + client +
+				'}';
+    }
 }
