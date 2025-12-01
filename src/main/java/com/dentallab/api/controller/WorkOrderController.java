@@ -1,15 +1,26 @@
 package com.dentallab.api.controller;
 
-import com.dentallab.api.model.WorkOrderModel;
-import com.dentallab.api.model.FullWorkOrderModel;
-import com.dentallab.service.WorkOrderService;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.dentallab.api.model.FullWorkOrderModel;
+import com.dentallab.api.model.WorkModel;
+import com.dentallab.api.model.WorkOrderModel;
+import com.dentallab.service.WorkOrderService;
+import com.dentallab.service.WorkService;
 
 @RestController
 @RequestMapping(
@@ -21,9 +32,13 @@ public class WorkOrderController {
     private static final Logger log = LoggerFactory.getLogger(WorkOrderController.class);
 
     private final WorkOrderService orderService;
+    private final WorkService workService;
 
-    public WorkOrderController(WorkOrderService orderService) {
+    public WorkOrderController(
+    		WorkOrderService orderService,
+    		WorkService workService) {
         this.orderService = orderService;
+        this.workService = workService;
     }
 
     /* ============================================================
@@ -55,6 +70,14 @@ public class WorkOrderController {
         log.info("GET /api/orders/{} succeeded", id);
         return ResponseEntity.ok(model);
     }
+    
+    @GetMapping("/{id}/works")
+    public ResponseEntity<List<WorkModel>> getWorksByOrderId(@PathVariable Long id) {
+		log.debug("GET /api/orders/{}/works - fetching works for order", id);
+		List<WorkModel> works = workService.getWorksByOrderId(id);
+		log.info("GET /api/orders/{}/works succeeded", id);
+		return ResponseEntity.ok(works);
+	} 
 
     /* ============================================================
        GET OVERDUE ORDERS

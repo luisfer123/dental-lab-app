@@ -14,5 +14,6 @@ logging:
     root: INFO
     com.dentallab: INFO
     com.dentallab.api.controller.WorkController: DEBUG
+    com.dentallab.api.controller.WorkOrderController: DEBUG
 jwt:
   log-tokens: true

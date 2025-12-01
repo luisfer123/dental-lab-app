@@ -39,6 +39,13 @@ public class WorkModel extends RepresentationModel<WorkModel> {
     private Long orderId;
     
     private ClientSummaryModel client;
+    
+    private String internalCode;
+    private Integer internalSeq;
+    private Integer internalYear;
+    private String profilePrefix;
+    private Long clientProfileId;
+
 
     // ==========================================================
     // GETTERS & SETTERS
@@ -89,10 +96,27 @@ public class WorkModel extends RepresentationModel<WorkModel> {
     public ClientSummaryModel getClient() { return client; }
     public void setClient(ClientSummaryModel client) { this.client = client; }
     
+    public String getProfilePrefix() { return profilePrefix; }
+    public void setProfilePrefix(String profilePrefix) { this.profilePrefix = profilePrefix; }
+
+    public Long getClientProfileId() { return clientProfileId; }
+    public void setClientProfileId(Long id) { this.clientProfileId = id; }
+
+    public Integer getInternalSeq() { return internalSeq; }
+    public void setInternalSeq(Integer seq) { this.internalSeq = seq; }
+
+    public Integer getInternalYear() { return internalYear; }
+    public void setInternalYear(Integer year) { this.internalYear = year; }
+
+    public String getInternalCode() { return internalCode; }
+    public void setInternalCode(String code) { this.internalCode = code; }
+
+    
     @Override
     public String toString() {
     			return "WorkModel{" +
 				"id=" + id +
+				", internalCode:'" + internalCode + '\'' +
 				", type='" + type + '\'' +
 				", typeLabel='" + typeLabel + '\'' +
 				", workFamily='" + workFamily + '\'' +

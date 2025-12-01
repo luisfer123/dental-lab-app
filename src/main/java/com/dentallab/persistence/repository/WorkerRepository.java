@@ -33,4 +33,6 @@ public interface WorkerRepository extends JpaRepository<WorkerEntity, Long> {
             WHERE r.name = :roleName
         """)
         List<WorkerEntity> findAllByRole(@Param("roleName") String roleName);
+    
+
 }

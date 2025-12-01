@@ -74,6 +74,25 @@ public class WorkEntity implements Serializable {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    // ==========================================================
+    // HUMAN-READABLE INTERNAL CODE (ID)
+    // ==========================================================
+    
+    @Column(name = "profile_prefix", length = 1)
+    private String profilePrefix;
+
+    @Column(name = "client_profile_id")
+    private Long clientProfileId;
+
+    @Column(name = "internal_seq")
+    private Integer internalSeq;
+
+    @Column(name = "internal_year")
+    private Integer internalYear;
+
+    @Column(name = "internal_code", length = 50)
+    private String internalCode;
 
     // ==========================================================
     // RELATIONSHIPS
@@ -146,6 +165,21 @@ public class WorkEntity implements Serializable {
 
     public List<WorkCategoryEntity> getCategories() { return categories; }
     public void setCategories(List<WorkCategoryEntity> categories) { this.categories = categories; }
+    
+    public String getProfilePrefix() { return profilePrefix; }
+    public void setProfilePrefix(String profilePrefix) { this.profilePrefix = profilePrefix; }
+
+    public Long getClientProfileId() { return clientProfileId; }
+    public void setClientProfileId(Long id) { this.clientProfileId = id; }
+
+    public Integer getInternalSeq() { return internalSeq; }
+    public void setInternalSeq(Integer seq) { this.internalSeq = seq; }
+
+    public Integer getInternalYear() { return internalYear; }
+    public void setInternalYear(Integer year) { this.internalYear = year; }
+
+    public String getInternalCode() { return internalCode; }
+    public void setInternalCode(String code) { this.internalCode = code; }
 
     public CrownWorkEntity getCrownWork() { return crownWork; }
     public void setCrownWork(CrownWorkEntity crownWork) { this.crownWork = crownWork; }
@@ -192,7 +226,8 @@ public class WorkEntity implements Serializable {
     @Override
     public String toString() {
         return "WorkEntity{" +
-                "id=" + id +
+        		"id:" + id +
+                ", internalCode=" + (internalCode != null ? internalCode : null) +
                 ", family=" + (workFamily != null ? workFamily.getCode() : null) +
                 ", type=" + (type != null ? type.getCode() : null) +
                 ", description='" + description + '\'' +

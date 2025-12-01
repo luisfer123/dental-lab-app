@@ -39,6 +39,12 @@ public class WorkAssembler extends RepresentationModelAssemblerSupport<WorkEntit
         model.setNotes(entity.getNotes());
         model.setCreatedAt(entity.getCreatedAt());
         model.setUpdatedAt(entity.getUpdatedAt());
+        
+        model.setInternalCode(entity.getInternalCode());
+        model.setInternalSeq(entity.getInternalSeq());
+        model.setInternalYear(entity.getInternalYear());
+        model.setProfilePrefix(entity.getProfilePrefix());
+        model.setClientProfileId(entity.getClientProfileId());
 
         // Lookup codes (safe)
         model.setWorkFamily(entity.getWorkFamily() != null ? entity.getWorkFamily().getCode() : null);

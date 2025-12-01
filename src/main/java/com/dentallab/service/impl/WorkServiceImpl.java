@@ -5,6 +5,7 @@ import static com.dentallab.persistence.spec.WorkSpecifications.hasStatus;
 import static com.dentallab.persistence.spec.WorkSpecifications.hasType;
 import static com.dentallab.persistence.spec.WorkSpecifications.hasWorkFamily;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +35,7 @@ import com.dentallab.persistence.entity.CrownWorkEntity;
 import com.dentallab.persistence.entity.WorkEntity;
 import com.dentallab.persistence.entity.WorkFamilyRefEntity;
 import com.dentallab.persistence.entity.WorkOrderEntity;
+import com.dentallab.persistence.entity.WorkStatusRefEntity;
 import com.dentallab.persistence.entity.WorkTypeRefEntity;
 import com.dentallab.persistence.repository.BridgeWorkRepository;
 import com.dentallab.persistence.repository.ClientRepository;
@@ -41,6 +43,7 @@ import com.dentallab.persistence.repository.CrownWorkRepository;
 import com.dentallab.persistence.repository.WorkFamilyRefRepository;
 import com.dentallab.persistence.repository.WorkOrderRepository;
 import com.dentallab.persistence.repository.WorkRepository;
+import com.dentallab.persistence.repository.WorkStatusRefRepository;
 import com.dentallab.persistence.repository.WorkTypeRefRepository;
 import com.dentallab.service.BridgeWorkService;
 import com.dentallab.service.CrownWorkService;
@@ -58,9 +61,13 @@ public class WorkServiceImpl implements WorkService {
     private final WorkRepository workRepository;
     private final CrownWorkRepository crownRepository;
     private final BridgeWorkRepository bridgeRepository;
+    
     private final ClientRepository clientRepository;
+    
     private final WorkTypeRefRepository workTypeRefRepository;
     private final WorkFamilyRefRepository workFamilyRefRepository;
+    private final WorkStatusRefRepository statusRefRepository;
+    
     private final WorkOrderRepository orderRepository;
     
     private final CrownWorkService crownWorkService;
@@ -80,14 +87,19 @@ public class WorkServiceImpl implements WorkService {
             WorkFamilyRefRepository workFamilyRefRepository,
             CrownWorkService crownWorkService,
             BridgeWorkService bridgeWorkService,
-            WorkOrderRepository orderRepository
+            WorkOrderRepository orderRepository,
+            WorkStatusRefRepository statusRefRepository
     ) {
         this.workRepository = workRepository;
         this.crownRepository = crownRepository;
         this.bridgeRepository = bridgeRepository;
+        
         this.clientRepository = clientRepository;
+        
         this.workTypeRefRepository = workTypeRefRepository;
         this.workFamilyRefRepository = workFamilyRefRepository;
+        this.statusRefRepository = statusRefRepository;
+        
         this.orderRepository = orderRepository;
         
         this.crownWorkService = crownWorkService;
@@ -128,6 +140,21 @@ public class WorkServiceImpl implements WorkService {
                 .orElseThrow(() -> new EntityNotFoundException("Work not found with id " + id));
 
         return workAssembler.toModel(entity);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<WorkModel> getWorksByOrderId(Long orderId) {
+        
+        if (!orderRepository.existsById(orderId)) {
+            throw new EntityNotFoundException("Order not found: " + orderId);
+        }
+
+        List<WorkEntity> works = workRepository.findAllByOrderId(orderId);
+
+        return works.stream()
+                    .map(workAssembler::toModel)
+                    .toList();
     }
 
     /**
@@ -209,12 +236,32 @@ public class WorkServiceImpl implements WorkService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid family: " + baseModel.getWorkFamily()));
 
         work.setWorkFamily(familyRef);
+        
+        WorkStatusRefEntity statusRef;
+        if(baseModel.getStatus() != null) {
+	        statusRef = statusRefRepository
+					.findByCode(baseModel.getStatus())
+					.orElseThrow(() -> new IllegalArgumentException("Invalid status: " + baseModel.getStatus()));
+        } else {
+			// default status if not provided
+			statusRef = statusRefRepository
+					.findBySequenceOrder(1)
+					.orElseThrow(() -> new IllegalArgumentException("Invalid default status: RECEIVED"));
+		}
+        
+		work.setStatus(statusRef);
+        
+        // ---------------------------------------------------------
+        // 4) Create internalCode and add it to work
+        // ---------------------------------------------------------
+        addInternalCodeToWork(work, client);
 
         work = workRepository.save(work);
-        log.info("Base work created. workId={} orderId={}", work.getId(), order.getId());
+        log.info("Base work created. workId={} internalCode={} orderId={}",
+                work.getId(), work.getInternalCode(), order.getId());
 
         // ---------------------------------------------------------
-        // 4) Create extension entity (CROWN / BRIDGE)
+        // 5) Create extension entity (CROWN / BRIDGE)
         // ---------------------------------------------------------
         WorkExtensionModel ext = payload.getExtension();
 
@@ -241,10 +288,13 @@ public class WorkServiceImpl implements WorkService {
                 default -> throw new IllegalArgumentException(
                         "Unsupported extension type: " + ext.getType());
             }
+            
+            log.info("Full work created. extension type={}",
+                    ext.getType());
         }
 
         // ---------------------------------------------------------
-        // 5) Return full work model with client + order + extension
+        // 6) Return full work model with client + order + extension
         // ---------------------------------------------------------
         return fullWorkAssembler.toModel(work);
     }
@@ -438,6 +488,57 @@ public class WorkServiceImpl implements WorkService {
                 page + 1, idPage.getTotalPages(), models.size());
 
         return new PageImpl<>(models, pageable, idPage.getTotalElements());
+    }
+    
+    @Transactional
+    private void addInternalCodeToWork(WorkEntity work, ClientEntity client) {
+
+        int year = LocalDate.now().getYear();
+
+        // 1. Detect client profile & prefix (D / S / T)
+        String prefix;
+        Long profileId;
+
+        if (client.getDentistProfile() != null) {
+            prefix = "D";
+            profileId = client.getDentistProfile().getId();
+        } else if (client.getStudentProfile() != null) {
+            prefix = "S";
+            profileId = client.getStudentProfile().getId();
+        } else if (client.getTechnicianProfile() != null) {
+            prefix = "T";
+            profileId = client.getTechnicianProfile().getId();
+        } else {
+            throw new IllegalStateException("Client without profile should not exist.");
+        }
+
+        // 2. Get previous max seq for this profile & year
+        Integer maxSeq = workRepository
+                .findMaxSeqForProfileAndYear(profileId, year)
+                .orElse(0);
+
+        int nextSeq = maxSeq + 1;
+
+        // 3. Assign metadata
+        work.setProfilePrefix(prefix);
+        work.setClientProfileId(profileId);
+        work.setInternalSeq(nextSeq);
+        work.setInternalYear(year);
+
+        // 4. Generate human-readable code
+        String internalCode = String.format(
+                "%s%d-%03d-%02d",
+                prefix,
+                profileId,
+                nextSeq,
+                year % 100
+        );
+
+        work.setInternalCode(internalCode);
+
+        // At this point work.getId() is null (not saved yet)
+        log.info("Generated internal code '{}' (profile={} seq={} year={})",
+                internalCode, profileId, nextSeq, year);
     }
 
 

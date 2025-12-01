@@ -1,31 +1,27 @@
 package com.dentallab.service.impl;
 
-import com.dentallab.api.assembler.WorkOrderAssembler;
-import com.dentallab.api.assembler.FullWorkOrderAssembler;
+import java.time.LocalDateTime;
+import java.util.List;
 
-import com.dentallab.api.model.WorkOrderModel;
-import com.dentallab.api.model.FullWorkOrderModel;
-
-import com.dentallab.persistence.entity.ClientEntity;
-import com.dentallab.persistence.entity.WorkOrderEntity;
-
-import com.dentallab.persistence.repository.ClientRepository;
-import com.dentallab.persistence.repository.WorkOrderRepository;
-
-import com.dentallab.service.WorkOrderService;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.time.LocalDateTime;
+import com.dentallab.api.assembler.FullWorkOrderAssembler;
+import com.dentallab.api.assembler.WorkOrderAssembler;
+import com.dentallab.api.model.FullWorkOrderModel;
+import com.dentallab.api.model.WorkModel;
+import com.dentallab.api.model.WorkOrderModel;
+import com.dentallab.persistence.entity.ClientEntity;
+import com.dentallab.persistence.entity.WorkOrderEntity;
+import com.dentallab.persistence.repository.ClientRepository;
+import com.dentallab.persistence.repository.WorkOrderRepository;
+import com.dentallab.service.WorkOrderService;
 
 @Service
 @Transactional

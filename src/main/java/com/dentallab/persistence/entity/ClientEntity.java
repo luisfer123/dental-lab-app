@@ -1,8 +1,19 @@
 package com.dentallab.persistence.entity;
 
-import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.Objects;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "client")
@@ -74,30 +85,46 @@ public class ClientEntity {
        ----------------------- */
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    
     public String getDisplayName() { return displayName; }
     public void setDisplayName(String displayName) { this.displayName = displayName; }
+    
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }
+    
     public String getSecondName() { return secondName; }
     public void setSecondName(String secondName) { this.secondName = secondName; }
+    
     public String getLastName() { return lastName; }
     public void setLastName(String lastName) { this.lastName = lastName; }
+    
     public String getSecondLastName() { return secondLastName; }
     public void setSecondLastName(String secondLastName) { this.secondLastName = secondLastName; }
+    
     public String getPrimaryEmail() { return primaryEmail; }
     public void setPrimaryEmail(String primaryEmail) { this.primaryEmail = primaryEmail; }
+    
     public String getPrimaryPhone() { return primaryPhone; }
     public void setPrimaryPhone(String primaryPhone) { this.primaryPhone = primaryPhone; }
+    
     public String getPrimaryAddress() { return primaryAddress; }
     public void setPrimaryAddress(String primaryAddress) { this.primaryAddress = primaryAddress; }
+    
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+    
     public TechnicianProfileEntity getTechnicianProfile() { return technicianProfile; }
     public void setTechnicianProfile(TechnicianProfileEntity technicianProfile) { this.technicianProfile = technicianProfile; }
+    
+    public StudentProfileEntity getStudentProfile() {return studentProfile; }
+    public void setStudentProfile(StudentProfileEntity studentProfile) { this.studentProfile = studentProfile; }
+    
     public DentistProfileEntity getDentistProfile() { return dentistProfile; }
     public void setDentistProfile(DentistProfileEntity dentistProfile) { this.dentistProfile = dentistProfile; }
 
