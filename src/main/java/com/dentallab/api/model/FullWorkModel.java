@@ -30,6 +30,9 @@ public class FullWorkModel extends RepresentationModel<FullWorkModel> {
 
     @JsonProperty("typeLabel")
     private String typeLabel;
+    
+    @JsonProperty("internalCode")
+    private String internalCode;
 
     // ==========================================================
     // Constructors
@@ -77,4 +80,20 @@ public class FullWorkModel extends RepresentationModel<FullWorkModel> {
 
     public String getTypeLabel() { return typeLabel; }
     public void setTypeLabel(String typeLabel) { this.typeLabel = typeLabel; }
+    
+    public String getInternalCode() {return internalCode; }
+    public void setInternalCode(String internalCode) {this.internalCode = internalCode; }
+    
+    @Override
+    public String toString() {
+		return "FullWorkModel{" +
+				"base=" + base +
+				", extension=" + extension +
+				", internalCode=" + internalCode +
+				", workFamily='" + workFamily + '\'' +
+				", type='" + type + '\'' +
+				", familyLabel='" + familyLabel + '\'' +
+				", typeLabel='" + typeLabel + '\'' +
+				'}';
+	}
 }

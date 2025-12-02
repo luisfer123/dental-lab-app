@@ -1,5 +1,6 @@
 package com.dentallab.persistence.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -36,4 +37,7 @@ public interface UserAccountRepository extends JpaRepository<UserAccountEntity, 
 	// Find only enabled users by username or email
 	@EntityGraph(attributePaths = {"userRoles", "userRoles.role"})
 	Optional<UserAccountEntity> findByUsernameOrEmailAndEnabledTrue(String username, String email);
+	
+	List<UserAccountEntity> findAllByUsernameLike(String pattern);
+
 }

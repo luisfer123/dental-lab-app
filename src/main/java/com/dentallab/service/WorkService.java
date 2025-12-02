@@ -28,12 +28,13 @@ public interface WorkService {
      * Returns a single work by its unique ID.
      */
     WorkModel getById(Long id);
+    
+    List<WorkModel> getWorksByOrderId(Long orderId);
 
     /**
-     * Persists a new work.
+     * Persists a new work with extension entity.
      */
-    @Transactional
-    WorkModel create(WorkModel model);
+    FullWorkModel create(FullWorkModel payload);
 
     /**
      * Updates an existing work with the given ID.
@@ -102,4 +103,5 @@ public interface WorkService {
             String familyCode,
             List<String> categories
     );
+
 }

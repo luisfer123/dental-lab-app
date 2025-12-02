@@ -1,16 +1,20 @@
 package com.dentallab.api.controller;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
-
-import java.net.URI;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.dentallab.api.model.FullWorkModel;
 import com.dentallab.api.model.WorkModel;
@@ -79,12 +83,29 @@ public class WorkController {
     public ResponseEntity<WorkModel> getById(@PathVariable Long id) {
         return ResponseEntity.ok(workService.getById(id));
     }
-
+    
+    /**
+     * Creates a new work (base + extension) using polymorphic input.
+     * Example JSON payload:
+     *
+     * {
+     *   "base": { ... },
+     *   "extension": {
+     *      "type": "CROWN",
+     *      ...
+     *   }
+     * }
+     */
     @PostMapping
-    public ResponseEntity<WorkModel> create(@RequestBody WorkModel model) {
-        WorkModel created = workService.create(model);
-        URI location = linkTo(methodOn(WorkController.class).getById(created.getId())).toUri();
-        return ResponseEntity.created(location).body(created);
+    public ResponseEntity<FullWorkModel> createWork(@RequestBody FullWorkModel payload) {
+    	System.out.println("Creating work with payload: " + payload);
+        log.info("Received request to create work. Base type: {}", 
+                 payload.getBase() != null ? payload.getBase().getType() : "null");
+
+        FullWorkModel created = workService.create(payload);
+
+        log.info("Work successfully created. ID: {}", created.getBase().getId());
+        return ResponseEntity.ok(created);
     }
 
     @PutMapping("/{id}")

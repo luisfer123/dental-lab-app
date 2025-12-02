@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.dentallab.api.model.ClientFullModel;
 import com.dentallab.api.model.ClientModel;
+import com.dentallab.api.model.ClientSummaryModel;
 import com.dentallab.service.ClientService;
 
 /**
@@ -78,6 +79,24 @@ public class ClientController {
         model.add(linkTo(methodOn(ClientController.class).getClientFull(id)).withSelfRel());
         log.info("GET /api/clients/{}/full succeeded", id);
         return ResponseEntity.ok(model);
+    }
+    
+    /**
+     * Search clients by name, email, or phone.
+     * 
+     * @param query the search query string
+     * @param page  the page number (0-based)
+     * @param size  the page size
+     * 
+     * @return a page of matching ClientSummaryModel
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Page<ClientSummaryModel>> searchClients(
+    		@RequestParam String query,
+    		@RequestParam( defaultValue = "0") int page,
+    		@RequestParam( defaultValue = "10") int size) {
+    	log.debug("GET /api/clients/search?query={} - searching clients", query);
+        return ResponseEntity.ok(clientService.searchClients(query, page, size));
     }
 
     /* -------------------- CREATE -------------------- */

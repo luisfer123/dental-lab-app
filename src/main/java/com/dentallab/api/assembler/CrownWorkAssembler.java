@@ -3,6 +3,8 @@ package com.dentallab.api.assembler;
 import com.dentallab.api.controller.WorkController;
 import com.dentallab.api.model.CrownWorkModel;
 import com.dentallab.persistence.entity.CrownWorkEntity;
+import com.dentallab.persistence.entity.WorkEntity;
+
 import org.springframework.hateoas.server.mvc.RepresentationModelAssemblerSupport;
 import org.springframework.stereotype.Component;
 
@@ -58,11 +60,27 @@ public class CrownWorkAssembler extends RepresentationModelAssemblerSupport<Crow
     /* ==========================================================
        MODEL → ENTITY (for creates/updates)
        ========================================================== */
-    public CrownWorkEntity toEntity(CrownWorkModel model) {
+    public CrownWorkEntity toEntity(CrownWorkModel model, WorkEntity work) {
+
         CrownWorkEntity entity = new CrownWorkEntity();
-        copyCommonFields(model, entity);
+
+        // Assign FK
+        entity.setWork(work);
+
+        // Common fields
+        entity.setNotes(model.getNotes());
+
+        // Crown-specific
+        entity.setToothNumber(model.getToothNumber());
+        entity.setVariant(model.getCrownVariant());
+        entity.setBuildingTechnique(model.getBuildingTechnique());
+        entity.setCoreMaterialId(model.getCoreMaterialId());
+        entity.setVeneeringMaterialId(model.getVeneeringMaterialId());
+        entity.setIsMonolithic(model.getIsMonolithic());
+
         return entity;
     }
+
 
     /* ==========================================================
        Partial update helper (PATCH / PUT)

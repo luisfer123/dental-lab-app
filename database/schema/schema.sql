@@ -232,15 +232,18 @@ CREATE TABLE material (
 CREATE TABLE work_order (
   order_id      BIGINT PRIMARY KEY AUTO_INCREMENT,
   client_id     BIGINT NOT NULL,
-  date_received DATE NOT NULL,
-  due_date      DATE,
-  status        VARCHAR(50),
+  date_received TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  due_date      TIMESTAMP, -- Date it should be delivered to the client
+  delivered_at TIMESTAMP NULL, -- Date the order actualy was delivered to the client
+  status        VARCHAR(50) DEFAULT 'RECEIVED',
   notes         TEXT,
-  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (client_id) REFERENCES client(client_id) ON DELETE CASCADE
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Date the order is created in the system
+  updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Last update in the system
+  FOREIGN KEY (status) REFERENCES work_status_ref(code) ON DELETE RESTRICT,
+  FOREIGN KEY (client_id) REFERENCES client(client_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB COMMENT='Groups one or more works sent by a client in a single submission or pickup.';
 CREATE INDEX idx_order_client ON work_order(client_id);
+CREATE INDEX idx_order_due_date ON work_order(due_date);
 
 CREATE TABLE work (
   work_id     BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -263,6 +266,14 @@ CREATE TABLE work (
   notes       TEXT,
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  
+  -- fields for a human-readalbe code (Id) that can be used in fisical works in the lab
+  profile_prefix CHAR(1) NULL, -- Informative to easily know whther the code belogs to Dentist, Student, etc
+  client_profile_id BIGINT NULL, -- Here used only for internal_code, no FK (no relationship with profile table)
+  internal_seq INT NULL, -- Each year starts from zero (0). Increases by 1 for each new work of the corresponding client (counts client's work in a year)
+  internal_year INT NULL, -- Year the work is registered. Used in interna_code. internal_seq is restarted when internal_year increases.
+  internal_code VARCHAR(50) NULL, -- Human-readable code for each work. Form by the formula {PREFIX}{clientProfileId}-{seq}-{year}
+  
   FOREIGN KEY (order_id) REFERENCES work_order(order_id) ON DELETE CASCADE,
   FOREIGN KEY (client_id) REFERENCES client(client_id) ON DELETE CASCADE,
   FOREIGN KEY (work_family) REFERENCES work_family_ref(code) ON DELETE RESTRICT,
@@ -274,6 +285,8 @@ CREATE INDEX idx_work_order ON work(order_id);
 CREATE INDEX idx_work_client ON work(client_id);
 CREATE INDEX idx_work_family ON work(work_family);
 CREATE INDEX idx_work_type ON work(type);
+CREATE INDEX idx_work_profile_year_seq
+  ON work(client_profile_id, internal_year, internal_seq);
 
 CREATE TABLE work_step_template (
   template_id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -1112,13 +1125,11 @@ DELIMITER ;
 
 INSERT INTO work_status_ref (code, label, sequence_order) VALUES
 ('RECEIVED', 'Recibido', 1),
-('PENDING', 'Pendiente', 2),
-('ASSIGNED', 'Asignado', 3),
-('IN_PROGRESS', 'En proceso', 4),
-('FINISHED', 'Terminado', 5),
-('DELIVERING', 'Listo para entregar', 6),
-('DELIVERED', 'Entregado', 7),
-('COMPLETED', 'Completado', 8);
+('ASSIGNED', 'Asignado', 2),
+('IN_PROGRESS', 'En proceso', 3),
+('FINISHED', 'Terminado', 4),
+('DELIVERING', 'Listo para entregar', 5),
+('DELIVERED', 'Entregado', 6);
 
 INSERT INTO work_family_ref (code, label) VALUES
 ('FIXED_PROSTHESIS', 'Protesis fija'),

@@ -15,8 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.dentallab.api.assembler.ClientAssembler;
 import com.dentallab.api.assembler.ClientFullModelAssembler;
+import com.dentallab.api.assembler.ClientSummaryAssembler;
 import com.dentallab.api.model.ClientFullModel;
 import com.dentallab.api.model.ClientModel;
+import com.dentallab.api.model.ClientSummaryModel;
 import com.dentallab.persistence.entity.ClientEntity;
 import com.dentallab.persistence.repository.ClientRepository;
 import com.dentallab.service.ClientService;
@@ -32,12 +34,17 @@ public class ClientServiceImpl implements ClientService {
 	private final ClientRepository clientRepo;
 	private final ClientAssembler assembler;
 	private final ClientFullModelAssembler fullAssembler;
+	private final ClientSummaryAssembler summaryAssembler;
 
-	public ClientServiceImpl(ClientRepository clientRepo, ClientAssembler assembler,
-			ClientFullModelAssembler fullAssembler) {
+	public ClientServiceImpl(
+			ClientRepository clientRepo, 
+			ClientAssembler assembler,
+			ClientFullModelAssembler fullAssembler,
+			ClientSummaryAssembler summaryAssembler) {
 		this.clientRepo = clientRepo;
 		this.assembler = assembler;
 		this.fullAssembler = fullAssembler;
+		this.summaryAssembler = summaryAssembler;
 	}
 
 	/* -------------------- READ ALL -------------------- */
@@ -96,8 +103,43 @@ public class ClientServiceImpl implements ClientService {
 		log.info("Client found: {}", client.getDisplayName());
 		return fullAssembler.toModel(client);
 	}
+	
+	/**
+	 * Search clients by name, email, or phone.
+	 * 
+	 * @param query the search query string
+	 * @param page  the page number (0-based)
+	 * @param size  the page size
+	 * 
+	 * @return a page of matching ClientSummaryModel
+	 */
+	@Override
+	@Transactional(readOnly = true)
+	public Page<ClientSummaryModel> searchClients(String query, int page, int size) {
+		
+		log.debug("Searching clients with query='{}', page={}, size={}", query, page, size);
+		Pageable pageable = PageRequest.of(page, size);
+		log.info("Executing search in repository...");
+		Page<ClientEntity> pageResult = 
+				clientRepo.searchByNameEmailPhone(query, pageable);
+		Page<ClientSummaryModel> pageModel = 
+				pageResult.map(summaryAssembler::toModel);
+		
+		log.info("Search returned {} clients on page {}/{} for query='{}'",
+				pageModel.getNumberOfElements(),
+				pageModel.getNumber() + 1,
+				pageModel.getTotalPages(),
+				query);
+		
+	    return pageModel;
+	}
 
-	/* -------------------- CREATE -------------------- */
+	/**
+	 * Create a new client.
+	 * 
+	 * @param model the client model to create
+	 * @return the created client model with generated ID
+	 */
 	@Override
 	@Transactional
 	public ClientModel create(ClientModel model) {

@@ -62,6 +62,23 @@ public class WorkerEntity {
 
     @Column(name = "updated_at", insertable = false)
     private Instant updatedAt;
+    
+    public static WorkerEntity create(
+            UserAccountEntity user,
+            String firstName,
+            String lastName,
+            String email
+    ) {
+        WorkerEntity w = new WorkerEntity();
+        w.setUser(user);
+        w.setFirstName(firstName);
+        w.setLastName(lastName);
+        w.setEmail(email);
+        w.setDisplayName(firstName + " " + lastName);
+        w.setActive(true);
+        return w;
+    }
+
 
     // =========================================================
     // Getters & Setters (single line each)

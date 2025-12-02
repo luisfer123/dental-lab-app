@@ -5,6 +5,7 @@ import org.springframework.hateoas.CollectionModel;
 
 import com.dentallab.api.model.ClientFullModel;
 import com.dentallab.api.model.ClientModel;
+import com.dentallab.api.model.ClientSummaryModel;
 
 public interface ClientService {
 
@@ -30,4 +31,9 @@ public interface ClientService {
 	Page<ClientModel> getAllWithStudentProfile(int page, int size, String[] sortParams);
 	
 	Page<ClientModel> getAllWithTechnicianProfile(int page, int size, String[] sortParams);
+
+	// =============================
+	// SEARCH
+	// =============================
+	Page<ClientSummaryModel> searchClients(String query, int page, int size);
 }

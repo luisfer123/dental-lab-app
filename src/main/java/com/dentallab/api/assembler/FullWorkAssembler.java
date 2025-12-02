@@ -46,6 +46,8 @@ public class FullWorkAssembler extends RepresentationModelAssemblerSupport<WorkE
 
         model.setFamilyLabel(base.getFamilyLabel());
         model.setTypeLabel(base.getTypeLabel());
+        
+        model.setInternalCode(base.getInternalCode());
 
         String type = model.getType();
 

@@ -6,6 +6,6 @@ package com.dentallab.api.enums;
  */
 public enum BuildingTechnique {
     DIGITAL,
-    MANUAL,
+    ANALOG,
     HYBRID
 }
