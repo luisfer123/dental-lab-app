@@ -478,34 +478,123 @@ CREATE TABLE material_usage (
 -- 7) Pricing
 -- ===================================================
 
-CREATE TABLE work_price (
-  price_id    BIGINT PRIMARY KEY AUTO_INCREMENT,
-  work_id     BIGINT NOT NULL,
-  price       DECIMAL(12,2) NOT NULL,
-  currency    CHAR(3) DEFAULT 'MXN',
-  valid_from  DATE NOT NULL,
-  valid_to    DATE NULL,
-  client_id   BIGINT NULL,
-  notes       VARCHAR(255),
-  FOREIGN KEY (work_id) REFERENCES work(work_id) ON DELETE CASCADE,
-  FOREIGN KEY (client_id) REFERENCES client(client_id),
-  CHECK (price >= 0),
-  CHECK (valid_to IS NULL OR valid_to >= valid_from)
+CREATE TABLE work_type_price (
+  price_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+
+  -- Identidad del tipo de trabajo
+  work_family VARCHAR(50) NOT NULL,
+  work_type   VARCHAR(50) NOT NULL,
+
+  price_group VARCHAR(50) NOT NULL DEFAULT 'DEFAULT',  -- Permite crear precios especiales como precio para combenio con una universidad o por urgencia de trabajo.
+  
+  -- -------------------------------------------------------------------------
+  -- Atributos tarifarios opcionales (solo se llenan si influyen en el precio)
+  -- Si un campo es NULL → el precio aplica a cualquier valor ("comodín")
+  -- -------------------------------------------------------------------------
+
+  constitution       VARCHAR(50) NULL,        -- MONOLITHIC / STRATIFIED / METAL / TEMPORARY...
+  building_technique VARCHAR(50) NULL,        -- DIGITAL / MANUAL / HYBRID
+  denture_variant    VARCHAR(50) NULL,        -- STANDARD / PREMIUM / IMMEDIATE...
+  resin_type         VARCHAR(50) NULL,        -- para placas (inyectada, termo-curado, etc.)
+  teeth_type         VARCHAR(50) NULL,        -- dientes premium/estándar, etc.
+
+  -- -------------------------------------------------------------------------
+  -- Precios: uno de estos dos debe estar presente
+  -- -------------------------------------------------------------------------
+
+  base_price     DECIMAL(12,2) NULL,          -- coronas, inlays, trabajos unitarios
+  price_per_unit DECIMAL(12,2) NULL,          -- puentes (precio por unidad protésica)
+
+  CHECK (base_price IS NOT NULL OR price_per_unit IS NOT NULL),
+
+  currency CHAR(3) DEFAULT 'MXN',
+
+  -- -------------------------------------------------------------------------
+  -- Vigencia del precio (solo fecha de inicio)
+  -- El final se deduce del siguiente registro con mismos atributos
+  -- -------------------------------------------------------------------------
+
+  valid_from DATE NOT NULL,
+
+  notes VARCHAR(255),
+
+  -- -------------------------------------------------------------------------
+  -- Evitar duplicados exactos:
+  -- combinación de family + type + atributos + fecha de inicio
+  -- -------------------------------------------------------------------------
+
+  CONSTRAINT uq_work_type_price UNIQUE (
+      work_family,
+      work_type,
+      price_group,
+      constitution,
+      building_technique,
+      denture_variant,
+      resin_type,
+      teeth_type,
+      valid_from
+  ),
+
+  FOREIGN KEY (work_family)
+      REFERENCES work_family_ref(code)
+      ON DELETE RESTRICT,
+
+  FOREIGN KEY (work_type)
+      REFERENCES work_type_ref(code)
+      ON DELETE RESTRICT
 ) ENGINE=InnoDB;
+CREATE INDEX idx_work_type_price_lookup
+	ON work_type_price (
+	  work_family,
+	  work_type,
+	  constitution,
+	  building_technique,
+	  denture_variant,
+	  resin_type,
+	  teeth_type,
+	  valid_from
+	);
+
+CREATE TABLE work_price (
+    price_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    work_id BIGINT NOT NULL,
+    price DECIMAL(12,2) NOT NULL,
+    price_group VARCHAR(50) NOT NULL DEFAULT 'DEFAULT',
+    currency CHAR(3) DEFAULT 'MXN',
+    notes VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by BIGINT NULL,
+    UNIQUE(work_id),
+    CHECK (price >= 0),
+    FOREIGN KEY (work_id) REFERENCES work(work_id),
+    FOREIGN KEY (created_by) REFERENCES user_account(user_id)
+);
 
 CREATE TABLE work_item_price_override (
   override_id  BIGINT PRIMARY KEY AUTO_INCREMENT,
-  work_id BIGINT NOT NULL,
-  price        DECIMAL(12,2) NOT NULL,
-  currency     CHAR(3) DEFAULT 'MXN',
-  reason       VARCHAR(255),
-  valid_from   DATE NOT NULL,
-  valid_to     DATE NULL,
-  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  created_by   BIGINT NULL,
-  FOREIGN KEY (work_id) REFERENCES work(work_id),
-  FOREIGN KEY (created_by)  REFERENCES user_account(user_id)
+
+  work_price_id BIGINT NOT NULL,
+
+  -- Monto del ajuste. Puede ser positivo (recargo) o negativo (descuento).
+  adjustment DECIMAL(12,2) NOT NULL,
+
+  currency CHAR(3) DEFAULT 'MXN',
+
+  -- Para registrar motivo del ajuste
+  reason VARCHAR(255),
+
+  -- Momento en que se aplicó el override
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  created_by BIGINT NULL,
+  
+  CHECK (adjustment <> 0),
+  CHECK (adjustment IS NOT NULL),
+
+  FOREIGN KEY (work_price_id) REFERENCES work_price(price_id),
+  FOREIGN KEY (created_by) REFERENCES user_account(user_id)
 ) ENGINE=InnoDB;
+CREATE INDEX idx_override_work ON work_item_price_override(work_price_id);
 
 -- ===================================================
 -- 8) Invoicing
@@ -540,6 +629,12 @@ CREATE TABLE invoice_item (
 -- 9) Payments
 -- ===================================================
 
+-- Para saber si un trabajo esta pagado hay que sumar los payment_allocation.amount_applied (cliente da pago)
+-- y los client_balance_movement.amount_change (se usa credito que el cliente tiene) asociados a dicho trabajo.
+-- pagado(work) =
+--   SUM(payment_allocation.amount_applied)
+-- + SUM(ABS(client_balance_movement.amount_change WHERE type='APPLY_WORK'))
+
 CREATE TABLE payment (
   payment_id   BIGINT PRIMARY KEY AUTO_INCREMENT,
   client_id    BIGINT NOT NULL,
@@ -547,6 +642,7 @@ CREATE TABLE payment (
   method       VARCHAR(40),
   amount_total DECIMAL(12,2) NOT NULL,
   currency     CHAR(3) DEFAULT 'MXN',
+  status ENUM('RECEIVED', 'CANCELLED') DEFAULT 'RECEIVED',
   last_updated TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6)
                  ON UPDATE CURRENT_TIMESTAMP(6),
   reference    VARCHAR(100),
@@ -556,13 +652,95 @@ CREATE TABLE payment (
 
 CREATE TABLE payment_allocation (
   allocation_id   BIGINT PRIMARY KEY AUTO_INCREMENT,
+  
   payment_id      BIGINT NOT NULL,
-  invoice_item_id BIGINT NOT NULL,
-  amount_applied  DECIMAL(12,2) CHECK (amount_applied >= 0) NOT NULL,
+  work_id         BIGINT NOT NULL,      -- vínculo directo con trabajo
+  
+  amount_applied  DECIMAL(12,2) NOT NULL
+                  CHECK (amount_applied >= 0),
+  
   created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (payment_id)      REFERENCES payment(payment_id) ON DELETE CASCADE,
-  FOREIGN KEY (invoice_item_id) REFERENCES invoice_item(item_id)
+  
+  FOREIGN KEY (payment_id) REFERENCES payment(payment_id) ON DELETE CASCADE,
+  FOREIGN KEY (work_id)    REFERENCES work(work_id)    ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- Registra el saldo favorable que un cliente pueda tener, ya sea porque pago de mas
+-- Se cancelo un trabajo ya pagado, se asigno saldo por promocion o recompenza, etc.
+-- Un renglon por cliente. El historico se mantiene en client_balance_movement, en esta
+-- tabla solo se mantiene un reglon con el saldo (balance) actual.
+CREATE TABLE client_balance (
+  balance_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+
+  client_id  BIGINT NOT NULL UNIQUE,
+  
+  -- Se usa como cache del saldo acutal del cliente. La fuente de verdad es Sum(client_balance_movement.amount_change)
+  -- Se suma todo el hitorial de client_balance_movement.amount_change para un cliente dado. Habra valores negativos
+  -- y positivos y la suma total es (la fuente de verdad) el saldo actual del cliente.
+  amount     DECIMAL(12,2) NOT NULL CHECK (amount >= 0), 
+  currency   CHAR(3) DEFAULT 'MXN',
+
+  active     BOOLEAN DEFAULT TRUE, -- Si el cliente puede o no tener un balance. (saldo favorable)
+
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                 ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (client_id)
+      REFERENCES client(client_id)
+      ON DELETE CASCADE
+) ENGINE=InnoDB;
+CREATE INDEX idx_pa_work ON payment_allocation(work_id);
+
+-- Registro historico de client_balance.
+CREATE TABLE client_balance_movement (
+  movement_id   BIGINT PRIMARY KEY AUTO_INCREMENT,
+
+  client_id     BIGINT NOT NULL,
+
+  -- Positivo = entra saldo
+  -- Negativo = se usa saldo (por ejemplo, para pagar un trabajo)
+  -- Es la fuente de verdad para el saldo de un cliente. client_balance.amount es solo un cache cuya
+  -- fuente de verdad es Sum(amount_change) para cada cliente.
+  amount_change DECIMAL(12,2) NOT NULL,
+
+  currency      CHAR(3) DEFAULT 'MXN',
+
+  -- 
+  -- Tipos comunes:
+  -- 'PAY_EXCESS'      → sobrante de un pago real (se va al balance)
+  -- 'APPLY_WORK'      → se usa saldo para pagar un trabajo
+  -- 'PROMO'           → bono/promoción
+  -- 'MANUAL_ADJUST'   → corrección administrativa
+  --
+  type          VARCHAR(40) NOT NULL,
+
+  -- Si el movimiento proviene de un pago real
+  payment_id    BIGINT NULL,
+
+  -- Si el movimiento corresponde a pagar un trabajo
+  work_id       BIGINT NULL,
+
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  note          VARCHAR(255),
+  
+  CHECK (amount_change <> 0),
+
+  FOREIGN KEY (client_id)
+      REFERENCES client(client_id)
+      ON DELETE CASCADE,
+
+  FOREIGN KEY (payment_id)
+      REFERENCES payment(payment_id)
+      ON DELETE SET NULL,
+
+  FOREIGN KEY (work_id)
+      REFERENCES work(work_id)
+      ON DELETE SET NULL
+) ENGINE=InnoDB;
+CREATE INDEX idx_cbm_client ON client_balance_movement(client_id, created_at);
+CREATE INDEX idx_cbm_payment ON client_balance_movement(payment_id);
+CREATE INDEX idx_cbm_work ON client_balance_movement(work_id);
 
 -- ===================================================
 -- 10) Security (Refresh Tokens)

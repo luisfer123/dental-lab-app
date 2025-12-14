@@ -71,13 +71,20 @@ public class WorkOrderController {
         return ResponseEntity.ok(model);
     }
     
+    /**
+     * Get all works associated with a specific order ID
+     * 	
+     * @param id the order ID
+     * @return a list of {@link WorkOrderModel} associated with the order
+     * 
+     */
     @GetMapping("/{id}/works")
     public ResponseEntity<List<WorkModel>> getWorksByOrderId(@PathVariable Long id) {
 		log.debug("GET /api/orders/{}/works - fetching works for order", id);
 		List<WorkModel> works = workService.getWorksByOrderId(id);
 		log.info("GET /api/orders/{}/works succeeded", id);
 		return ResponseEntity.ok(works);
-	} 
+	}
 
     /* ============================================================
        GET OVERDUE ORDERS
