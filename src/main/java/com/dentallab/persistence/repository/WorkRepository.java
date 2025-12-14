@@ -92,6 +92,34 @@ public interface WorkRepository
 
     @Query("SELECT w FROM WorkEntity w WHERE w.order.id = :orderId")
     List<WorkEntity> findAllByOrderId(Long orderId);
-
     
+    @Query("""
+            SELECT w
+            FROM WorkEntity w
+            JOIN WorkPriceEntity wp
+                ON wp.workId = w.workId
+            WHERE w.clientId = :clientId
+              AND wp.price >
+                  (
+                    COALESCE(
+                        (
+                            SELECT SUM(pa.amountApplied)
+                            FROM PaymentAllocationEntity pa
+                            WHERE pa.workId = w.workId
+                        ), 0
+                    )
+                    +
+                    COALESCE(
+                        (
+                            SELECT SUM(ABS(cbm.amountChange))
+                            FROM ClientBalanceMovementEntity cbm
+                            WHERE cbm.workId = w.workId
+                              AND cbm.type = 'APPLY_WORK'
+                        ), 0
+                    )
+                  )
+            ORDER BY w.createdAt ASC
+        """)
+        List<WorkEntity> findUnpaidWorksByClientId(@Param("clientId") Long clientId);
+
 }
