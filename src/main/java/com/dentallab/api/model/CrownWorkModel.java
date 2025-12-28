@@ -1,8 +1,9 @@
 package com.dentallab.api.model;
 
-import com.dentallab.api.enums.CrownVariant;
-import com.dentallab.api.enums.BuildingTechnique;
 import java.util.Objects;
+
+import com.dentallab.api.enums.BuildingTechnique;
+import com.dentallab.domain.enums.FixProstheticConstitution;
 
 /**
  * API model representing a crown-type dental work.
@@ -11,7 +12,7 @@ import java.util.Objects;
 public class CrownWorkModel extends WorkExtensionModel {
 
     private String toothNumber;                // e.g. "16", "24"
-    private CrownVariant crownVariant;         // MONOLITHIC / STRATIFIED / METAL / TEMPORARY
+    private FixProstheticConstitution constitution;         // MONOLITHIC / STRATIFIED / METAL / TEMPORARY
     private BuildingTechnique buildingTechnique; // DIGITAL / MANUAL / HYBRID
     private Long coreMaterialId;               // material_id (core or single material)
     private Long veneeringMaterialId;          // optional if stratified or metal
@@ -29,12 +30,12 @@ public class CrownWorkModel extends WorkExtensionModel {
         this.toothNumber = toothNumber;
     }
 
-    public CrownVariant getCrownVariant() {
-        return crownVariant;
+    public FixProstheticConstitution getConstitution() {
+        return constitution;
     }
 
-    public void setCrownVariant(CrownVariant crownVariant) {
-        this.crownVariant = crownVariant;
+    public void setConstitution(FixProstheticConstitution constitution) {
+        this.constitution = constitution;
     }
 
     public BuildingTechnique getBuildingTechnique() {
@@ -80,7 +81,7 @@ public class CrownWorkModel extends WorkExtensionModel {
         if (!super.equals(o)) return false;
         CrownWorkModel that = (CrownWorkModel) o;
         return Objects.equals(toothNumber, that.toothNumber)
-                && crownVariant == that.crownVariant
+                && constitution == that.constitution
                 && buildingTechnique == that.buildingTechnique
                 && Objects.equals(coreMaterialId, that.coreMaterialId)
                 && Objects.equals(veneeringMaterialId, that.veneeringMaterialId)
@@ -89,7 +90,7 @@ public class CrownWorkModel extends WorkExtensionModel {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), toothNumber, crownVariant,
+        return Objects.hash(super.hashCode(), toothNumber, constitution,
                 buildingTechnique, coreMaterialId, veneeringMaterialId, isMonolithic);
     }
 
@@ -98,7 +99,7 @@ public class CrownWorkModel extends WorkExtensionModel {
         return "CrownWorkModel{" +
                 "workId=" + getWorkId() +
                 ", toothNumber='" + toothNumber + '\'' +
-                ", crownVariant=" + crownVariant +
+                ", constitution=" + constitution +
                 ", buildingTechnique=" + buildingTechnique +
                 ", coreMaterialId=" + coreMaterialId +
                 ", veneeringMaterialId=" + veneeringMaterialId +

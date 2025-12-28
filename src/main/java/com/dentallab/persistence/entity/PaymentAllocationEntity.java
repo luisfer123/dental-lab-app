@@ -2,28 +2,41 @@ package com.dentallab.persistence.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Objects;
 
 @Entity
-@Table(name = "payment_allocation")
+@Table(
+    name = "payment_allocation",
+    indexes = {
+        @Index(name = "idx_pa_work", columnList = "work_id")
+    }
+)
 public class PaymentAllocationEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "allocation_id")
     private Long allocationId;
 
-    @Column(nullable = false)
+    @Column(name = "payment_id", nullable = false)
     private Long paymentId;
 
-    @Column(nullable = false)
+    @Column(name = "work_id", nullable = false)
     private Long workId;
 
-    @Column(nullable = false)
+    @Column(name = "amount_applied", nullable = false, precision = 12, scale = 2)
     private BigDecimal amountApplied;
 
-    @Column(nullable = false)
-    private OffsetDateTime createdAt;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdAt == null) this.createdAt = Instant.now();
+    }
+
+    // -------- getters / setters --------
 
     public Long getAllocationId() {
         return allocationId;
@@ -57,25 +70,26 @@ public class PaymentAllocationEntity {
         this.amountApplied = amountApplied;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
+
+    // -------- equals / hashCode --------
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof PaymentAllocationEntity)) return false;
-        PaymentAllocationEntity that = (PaymentAllocationEntity) o;
+        if (!(o instanceof PaymentAllocationEntity that)) return false;
         return allocationId != null && allocationId.equals(that.allocationId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(allocationId);
+        return Objects.hashCode(allocationId);
     }
 
     @Override
@@ -85,6 +99,7 @@ public class PaymentAllocationEntity {
                 ", paymentId=" + paymentId +
                 ", workId=" + workId +
                 ", amountApplied=" + amountApplied +
+                ", createdAt=" + createdAt +
                 '}';
     }
 }

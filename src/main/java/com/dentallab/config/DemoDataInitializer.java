@@ -8,16 +8,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.dentallab.api.enums.BridgeVariant;
 import com.dentallab.api.enums.BuildingTechnique;
-import com.dentallab.api.enums.CrownVariant;
 import com.dentallab.api.model.BridgeWorkModel;
 import com.dentallab.api.model.CrownWorkModel;
 import com.dentallab.api.model.FullWorkModel;
 import com.dentallab.api.model.WorkModel;
+import com.dentallab.domain.enums.FixProstheticConstitution;
 import com.dentallab.persistence.entity.ClientEntity;
 import com.dentallab.persistence.entity.DentistProfileEntity;
 import com.dentallab.persistence.entity.MaterialEntity;
@@ -38,6 +38,7 @@ import com.dentallab.persistence.repository.WorkerRepository;
 import com.dentallab.service.WorkService;
 
 @Configuration
+@Profile("!test")
 public class DemoDataInitializer implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DemoDataInitializer.class);
@@ -299,7 +300,7 @@ public class DemoDataInitializer implements ApplicationRunner {
 
             CrownWorkModel ext = new CrownWorkModel();
             ext.setType("CROWN");
-            ext.setCrownVariant(CrownVariant.MONOLITHIC);
+            ext.setConstitution(FixProstheticConstitution.MONOLITHIC);
             ext.setBuildingTechnique(BuildingTechnique.DIGITAL);
             ext.setCoreMaterialId(mats.get(rnd.nextInt(mats.size())).getId());
             ext.setToothNumber(String.valueOf(11 + rnd.nextInt(20))); // valid enough for demo
@@ -341,11 +342,11 @@ public class DemoDataInitializer implements ApplicationRunner {
             boolean monolithic = rnd.nextBoolean();
 
             if (monolithic) {
-                ext.setBridgeVariant(BridgeVariant.MONOLITHIC);
+                ext.setConstitution(FixProstheticConstitution.MONOLITHIC);
                 ext.setCoreMaterialId(mats.get(rnd.nextInt(mats.size())).getId());
                 ext.setVeneeringMaterialId(null);
             } else {
-            	ext.setBridgeVariant(BridgeVariant.STRATIFIED);
+            	ext.setConstitution(FixProstheticConstitution.STRATIFIED);
                 ext.setCoreMaterialId(mats.get(rnd.nextInt(mats.size())).getId());
                 ext.setVeneeringMaterialId(mats.get(rnd.nextInt(mats.size())).getId());
             }

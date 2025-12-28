@@ -33,10 +33,8 @@ public class BridgeWorkAssembler extends RepresentationModelAssemblerSupport<Bri
         model.setWorkId(entity.getWork() != null ? entity.getWork().getId() : entity.getId());
 
         // Map all fields
-        model.setBridgeVariant(entity.getVariant());
+        model.setConstitution(entity.getConstitution());
         model.setBuildingTechnique(entity.getBuildingTechnique());
-        model.setAbutmentTeeth(entity.getAbutmentTeeth());
-        model.setPonticTeeth(entity.getPonticTeeth());
         model.setCoreMaterialId(entity.getCoreMaterialId());
         model.setVeneeringMaterialId(entity.getVeneeringMaterialId());
         model.setConnectorType(entity.getConnectorType());
@@ -61,13 +59,31 @@ public class BridgeWorkAssembler extends RepresentationModelAssemblerSupport<Bri
     /* ==========================================================
        MODEL → ENTITY (for creates/updates)
        ========================================================== */
-    public BridgeWorkEntity toEntity(BridgeWorkModel model, WorkEntity work) {
-        BridgeWorkEntity entity = new BridgeWorkEntity();
-        
-        entity.setWork(work);
-        
-        copyCommonFields(model, entity);
-        
+    /**
+     * Maps a BridgeWorkModel into a BridgeWorkEntity.
+     *
+     * @param model the API model
+     * @param work  the owning WorkEntity (required for @MapsId)
+     * @return populated BridgeWorkEntity
+     */
+    public static BridgeWorkEntity toEntity(
+            BridgeWorkModel model,
+            WorkEntity work
+    ) {
+        if (model == null) {
+            return null;
+        }
+
+        BridgeWorkEntity entity = new BridgeWorkEntity(work);
+
+        entity.setConstitution(model.getConstitution());
+        entity.setBuildingTechnique(model.getBuildingTechnique());
+        entity.setCoreMaterialId(model.getCoreMaterialId());
+        entity.setVeneeringMaterialId(model.getVeneeringMaterialId());
+        entity.setConnectorType(model.getConnectorType());
+        entity.setPonticDesign(model.getPonticDesign());
+        entity.setNotes(model.getNotes());
+
         return entity;
     }
 
@@ -88,17 +104,11 @@ public class BridgeWorkAssembler extends RepresentationModelAssemblerSupport<Bri
             entity.setNotes(model.getNotes());
 
         // Bridge-specific fields
-        if (model.getBridgeVariant() != null)
-            entity.setVariant(model.getBridgeVariant());
+        if (model.getConstitution() != null)
+            entity.setConstitution(model.getConstitution());
 
         if (model.getBuildingTechnique() != null)
             entity.setBuildingTechnique(model.getBuildingTechnique());
-
-        if (model.getAbutmentTeeth() != null)
-            entity.setAbutmentTeeth(model.getAbutmentTeeth());
-
-        if (model.getPonticTeeth() != null)
-            entity.setPonticTeeth(model.getPonticTeeth());
 
         if (model.getCoreMaterialId() != null)
             entity.setCoreMaterialId(model.getCoreMaterialId());

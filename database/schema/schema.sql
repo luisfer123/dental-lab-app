@@ -395,8 +395,6 @@ CREATE INDEX idx_crown_build_status  ON crown_work(building_status_id);
 
 CREATE TABLE bridge_work (
   work_id BIGINT PRIMARY KEY,
-  abutment_teeth JSON,    -- Teeth serving as abutments (with crowns)
-  pontic_teeth JSON,      -- Teeth numbers for pontic units
   
   -- Composition & manufacturing
   constitution ENUM('MONOLITHIC','STRATIFIED','METAL','TEMPORARY') NOT NULL
@@ -424,6 +422,39 @@ CREATE TABLE bridge_work (
 ) ENGINE=InnoDB;
 CREATE INDEX idx_bridge_build_status ON bridge_work(building_status_id);
 
+-- Reprensents a single unit in a crown_work.
+CREATE TABLE tooth_ref (
+  tooth_id BIGINT PRIMARY KEY,
+  tooth_number VARCHAR(5) NOT NULL UNIQUE
+    COMMENT 'Tooth identifier (FDI or Universal notation, e.g. 11, 21, 36)'
+) ENGINE=InnoDB;
+
+-- Join table between crown_work and tooth_ref. Contain atributes that describe the
+-- relationship between those two tables.
+CREATE TABLE bridge_tooth (
+  bridge_work_id BIGINT NOT NULL,
+  tooth_id BIGINT NOT NULL,
+
+  role ENUM('ABUTMENT','PONTIC') NOT NULL
+    COMMENT 'ABUTMENT = supporting crowned tooth, PONTIC = suspended unit',
+
+  position_index INT NULL
+    COMMENT 'Relative order of the tooth within the bridge span',
+
+  PRIMARY KEY (bridge_work_id, tooth_id),
+
+  FOREIGN KEY (bridge_work_id)
+    REFERENCES bridge_work(work_id)
+    ON DELETE CASCADE,
+
+  FOREIGN KEY (tooth_id)
+    REFERENCES tooth_ref(tooth_id)
+    ON DELETE RESTRICT
+) ENGINE=InnoDB;
+CREATE INDEX idx_bridge_tooth_role
+  ON bridge_tooth(role);
+CREATE INDEX idx_bridge_tooth_bridge
+  ON bridge_tooth(bridge_work_id);
 
 CREATE TABLE inlay_work (
   work_id BIGINT PRIMARY KEY,
@@ -478,6 +509,11 @@ CREATE TABLE material_usage (
 -- 7) Pricing
 -- ===================================================
 
+-- Contiene un precio base para un trabajo basado en algunos de sus parametros (work_family, work_type, price_group, constitution, etc)
+-- al crear un trabajo nuevo se muestra este precio base pero el usuario puede decidir modificarlo, la fuente de verdad de precio para
+-- un trabajo ya creado debe ser work_price.price
+-- Si se quiere modificar el precio de un trabajo especifico se deberia hacer agregado una o mas entradas a work_item_price_override.ajustment 
+-- asociadas al trabajo en cuestion. 
 CREATE TABLE work_type_price (
   price_id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
@@ -555,6 +591,12 @@ CREATE INDEX idx_work_type_price_lookup
 	  valid_from
 	);
 
+-- Es le precio base de un trabajo ya creado. Es la fuente de verdad para el precio de un trabajo ya creado.
+-- recordar que un renglon en work representa un trabajo fisico creado en el laboratorio y no una categoria abstracta. 
+-- en principio se decide usando la tabla work_type_price, si se quiere modificar se agregan entradas en
+-- work_item_price_override.ajustment. Al calcular el precio final de un trabajo siempre se usa la formula
+-- work_price.price + Sum(work_item_price_override.ajustmets). Aun asi se considera la fuente de verdad porque
+-- work_type_price.base_price puede cambiar con el tiempo.
 CREATE TABLE work_price (
     price_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     work_id BIGINT NOT NULL,
@@ -570,6 +612,8 @@ CREATE TABLE work_price (
     FOREIGN KEY (created_by) REFERENCES user_account(user_id)
 );
 
+-- Permite modificar precio de trabajos ya creados, Se peude usar para hacer descuentos a clientes especificos
+-- o por promociones, etc. 
 CREATE TABLE work_item_price_override (
   override_id  BIGINT PRIMARY KEY AUTO_INCREMENT,
 

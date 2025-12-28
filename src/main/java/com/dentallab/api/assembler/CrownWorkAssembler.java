@@ -36,7 +36,7 @@ public class CrownWorkAssembler extends RepresentationModelAssemblerSupport<Crow
 
         // Crown-specific fields
         model.setToothNumber(entity.getToothNumber());
-        model.setCrownVariant(entity.getVariant());
+        model.setConstitution(entity.getConstitution());
         model.setBuildingTechnique(entity.getBuildingTechnique());
         model.setCoreMaterialId(entity.getCoreMaterialId());
         model.setVeneeringMaterialId(entity.getVeneeringMaterialId());
@@ -72,7 +72,7 @@ public class CrownWorkAssembler extends RepresentationModelAssemblerSupport<Crow
 
         // Crown-specific
         entity.setToothNumber(model.getToothNumber());
-        entity.setVariant(model.getCrownVariant());
+        entity.setConstitution(model.getConstitution());
         entity.setBuildingTechnique(model.getBuildingTechnique());
         entity.setCoreMaterialId(model.getCoreMaterialId());
         entity.setVeneeringMaterialId(model.getVeneeringMaterialId());
@@ -102,8 +102,8 @@ public class CrownWorkAssembler extends RepresentationModelAssemblerSupport<Crow
         if (model.getToothNumber() != null)
             entity.setToothNumber(model.getToothNumber());
 
-        if (model.getCrownVariant() != null)
-            entity.setVariant(model.getCrownVariant());
+        if (model.getConstitution() != null)
+            entity.setConstitution(model.getConstitution());
 
         if (model.getBuildingTechnique() != null)
             entity.setBuildingTechnique(model.getBuildingTechnique());

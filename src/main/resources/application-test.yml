@@ -1,11 +1,23 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:dental_lab_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: "jdbc:h2:mem:pricing_test;MODE=MYSQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1"
     driver-class-name: org.h2.Driver
     username: sa
-    password: password
+    password:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop   # rebuild schema for each test run
-    database-platform: org.hibernate.dialect.H2Dialect
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        default_schema: dental_lab_app
+        format_sql: true
+
+  sql:
+    init:
+      mode: never
+  logging:
+    level:
+      org.hibernate.tool.schema: DEBUG
+      org.hibernate.SQL: DEBUG
+      org.hibernate.orm.jdbc.bind: TRACE

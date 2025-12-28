@@ -1,9 +1,22 @@
 package com.dentallab.persistence.entity;
 
-import com.dentallab.api.enums.CrownVariant;
-import com.dentallab.api.enums.BuildingTechnique;
-import jakarta.persistence.*;
 import java.util.Objects;
+
+import com.dentallab.api.enums.BuildingTechnique;
+import com.dentallab.domain.enums.FixProstheticConstitution;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 /**
  * Entity representing a crown-type prosthetic work.
@@ -24,7 +37,7 @@ public class CrownWorkEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "constitution", nullable = false, length = 20)
-    private CrownVariant variant;
+    private FixProstheticConstitution constitution;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "building_technique", nullable = false, length = 20)
@@ -51,11 +64,11 @@ public class CrownWorkEntity {
     public CrownWorkEntity() {
     }
 
-    public CrownWorkEntity(Long id, WorkEntity work, CrownVariant variant, BuildingTechnique buildingTechnique,
+    public CrownWorkEntity(Long id, WorkEntity work, FixProstheticConstitution constitution, BuildingTechnique buildingTechnique,
                            String toothNumber, Long coreMaterialId, Long veneeringMaterialId, String notes) {
         this.id = id;
         this.work = work;
-        this.variant = variant;
+        this.constitution = constitution;
         this.buildingTechnique = buildingTechnique;
         this.toothNumber = toothNumber;
         this.coreMaterialId = coreMaterialId;
@@ -83,12 +96,12 @@ public class CrownWorkEntity {
         this.work = work;
     }
 
-    public CrownVariant getVariant() {
-        return variant;
+    public FixProstheticConstitution getConstitution() {
+        return constitution;
     }
 
-    public void setVariant(CrownVariant variant) {
-        this.variant = variant;
+    public void setConstitution(FixProstheticConstitution constitution) {
+        this.constitution = constitution;
     }
 
     public BuildingTechnique getBuildingTechnique() {
@@ -132,8 +145,8 @@ public class CrownWorkEntity {
     }
 
     public Boolean getIsMonolithic() {
-        if (variant != null) {
-            return variant == CrownVariant.MONOLITHIC;
+        if (constitution != null) {
+            return constitution == FixProstheticConstitution.MONOLITHIC;
         }
         return null;
     }
@@ -153,7 +166,7 @@ public class CrownWorkEntity {
         CrownWorkEntity that = (CrownWorkEntity) o;
         return Objects.equals(id, that.id) &&
                 Objects.equals(toothNumber, that.toothNumber) &&
-                variant == that.variant &&
+                constitution == that.constitution &&
                 buildingTechnique == that.buildingTechnique &&
                 Objects.equals(coreMaterialId, that.coreMaterialId) &&
                 Objects.equals(veneeringMaterialId, that.veneeringMaterialId);
@@ -161,14 +174,14 @@ public class CrownWorkEntity {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, toothNumber, variant, buildingTechnique, coreMaterialId, veneeringMaterialId);
+        return Objects.hash(id, toothNumber, constitution, buildingTechnique, coreMaterialId, veneeringMaterialId);
     }
 
     @Override
     public String toString() {
         return "CrownWorkEntity{" +
                 "id=" + id +
-                ", variant=" + variant +
+                ", constitution=" + constitution +
                 ", buildingTechnique=" + buildingTechnique +
                 ", toothNumber='" + toothNumber + '\'' +
                 ", coreMaterialId=" + coreMaterialId +
