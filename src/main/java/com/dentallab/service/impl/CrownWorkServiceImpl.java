@@ -21,7 +21,7 @@ public class CrownWorkServiceImpl implements CrownWorkService {
 
         entity.setNotes(model.getNotes());
         entity.setToothNumber(model.getToothNumber());
-        entity.setVariant(model.getCrownVariant());
+        entity.setConstitution(model.getConstitution());
         entity.setBuildingTechnique(model.getBuildingTechnique());
         entity.setCoreMaterialId(model.getCoreMaterialId());
         entity.setVeneeringMaterialId(model.getVeneeringMaterialId());

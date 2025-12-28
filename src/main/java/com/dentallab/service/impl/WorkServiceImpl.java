@@ -22,6 +22,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.dentallab.api.assembler.BridgeWorkAssembler;
 import com.dentallab.api.assembler.FullWorkAssembler;
 import com.dentallab.api.assembler.WorkAssembler;
 import com.dentallab.api.model.BridgeWorkModel;
@@ -75,6 +76,7 @@ public class WorkServiceImpl implements WorkService {
     
     private final WorkAssembler workAssembler;
     private final FullWorkAssembler fullWorkAssembler;
+    private final BridgeWorkAssembler bridgeWorkAssembler;
 
     public WorkServiceImpl(
             WorkRepository workRepository,
@@ -88,7 +90,8 @@ public class WorkServiceImpl implements WorkService {
             CrownWorkService crownWorkService,
             BridgeWorkService bridgeWorkService,
             WorkOrderRepository orderRepository,
-            WorkStatusRefRepository statusRefRepository
+            WorkStatusRefRepository statusRefRepository,
+            BridgeWorkAssembler bridgeWorkAssembler
     ) {
         this.workRepository = workRepository;
         this.crownRepository = crownRepository;
@@ -107,6 +110,7 @@ public class WorkServiceImpl implements WorkService {
         
         this.fullWorkAssembler = fullWorkAssembler;
         this.workAssembler = workAssembler;
+        this.bridgeWorkAssembler = bridgeWorkAssembler;
     }
 
     // ==========================================================
@@ -281,7 +285,7 @@ public class WorkServiceImpl implements WorkService {
                 case "BRIDGE" -> {
                     BridgeWorkModel model = (BridgeWorkModel) ext;
                     BridgeWorkEntity extEntity =
-                            bridgeWorkService.toEntity(model, work);
+                            BridgeWorkAssembler.toEntity(model, work);
                     bridgeRepository.save(extEntity);
                 }
 

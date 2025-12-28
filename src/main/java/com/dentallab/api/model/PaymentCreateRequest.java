@@ -21,6 +21,7 @@ public class PaymentCreateRequest {
 
     private String notes;
 
+    
     private Map<Long, BigDecimal> allocations;
 
     public Long getClientId() { return clientId; }

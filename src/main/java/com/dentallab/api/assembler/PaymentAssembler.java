@@ -1,13 +1,16 @@
 package com.dentallab.api.assembler;
 
-import com.dentallab.api.model.PaymentModel;
-import com.dentallab.persistence.entity.PaymentEntity;
-import com.dentallab.api.controller.PaymentController;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
+import java.time.ZoneId;
 
 import org.springframework.hateoas.server.mvc.RepresentationModelAssemblerSupport;
 import org.springframework.stereotype.Component;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+import com.dentallab.api.controller.PaymentController;
+import com.dentallab.api.model.PaymentModel;
+import com.dentallab.persistence.entity.PaymentEntity;
 
 @Component
 public class PaymentAssembler
@@ -30,8 +33,8 @@ public class PaymentAssembler
         model.setStatus(entity.getStatus() != null ? entity.getStatus().name() : null);
         model.setReference(entity.getReference());
         model.setNotes(entity.getNotes());
-        model.setReceivedAt(entity.getReceivedAt() != null ? entity.getReceivedAt().toLocalDateTime() : null);
-        model.setLastUpdated(entity.getLastUpdated() != null ? entity.getLastUpdated().toLocalDateTime() : null);
+        model.setReceivedAt(entity.getReceivedAt() != null ? entity.getReceivedAt().atZone(ZoneId.systemDefault()).toLocalDateTime() : null);
+        model.setLastUpdated(entity.getLastUpdated() != null ? entity.getLastUpdated().atZone(ZoneId.systemDefault()).toLocalDateTime() : null);
 
         model.add(linkTo(
                 methodOn(PaymentController.class).getPaymentById(entity.getPaymentId())

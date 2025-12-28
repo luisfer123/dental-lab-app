@@ -2,36 +2,56 @@ package com.dentallab.persistence.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Objects;
 
 @Entity
-@Table(name = "client_balance_movement")
+@Table(
+    name = "client_balance_movement",
+    indexes = {
+        @Index(name = "idx_cbm_client", columnList = "client_id, created_at"),
+        @Index(name = "idx_cbm_payment", columnList = "payment_id"),
+        @Index(name = "idx_cbm_work", columnList = "work_id")
+    }
+)
 public class ClientBalanceMovementEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "movement_id")
     private Long movementId;
 
-    @Column(nullable = false)
+    @Column(name = "client_id", nullable = false)
     private Long clientId;
 
-    @Column(nullable = false)
+    @Column(name = "amount_change", nullable = false, precision = 12, scale = 2)
     private BigDecimal amountChange;
 
-    @Column(length = 3)
-    private String currency;
+    @Column(name = "currency", length = 3)
+    private String currency = "MXN";
 
-    @Column(nullable = false)
+    @Column(name = "type", nullable = false, length = 40)
     private String type;
 
+    @Column(name = "payment_id")
     private Long paymentId;
 
+    @Column(name = "work_id")
     private Long workId;
 
-    private OffsetDateTime createdAt;
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
 
+    @Column(name = "note", length = 255)
     private String note;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdAt == null) this.createdAt = Instant.now();
+        if (this.currency == null) this.currency = "MXN";
+    }
+
+    // -------- getters / setters --------
 
     public Long getMovementId() {
         return movementId;
@@ -89,11 +109,11 @@ public class ClientBalanceMovementEntity {
         this.workId = workId;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
@@ -105,17 +125,18 @@ public class ClientBalanceMovementEntity {
         this.note = note;
     }
 
+    // -------- equals / hashCode --------
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof ClientBalanceMovementEntity)) return false;
-        ClientBalanceMovementEntity that = (ClientBalanceMovementEntity) o;
+        if (!(o instanceof ClientBalanceMovementEntity that)) return false;
         return movementId != null && movementId.equals(that.movementId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(movementId);
+        return Objects.hashCode(movementId);
     }
 
     @Override
@@ -124,7 +145,11 @@ public class ClientBalanceMovementEntity {
                 "movementId=" + movementId +
                 ", clientId=" + clientId +
                 ", amountChange=" + amountChange +
+                ", currency='" + currency + '\'' +
                 ", type='" + type + '\'' +
+                ", paymentId=" + paymentId +
+                ", workId=" + workId +
+                ", createdAt=" + createdAt +
                 '}';
     }
 }

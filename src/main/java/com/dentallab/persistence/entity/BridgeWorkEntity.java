@@ -1,10 +1,26 @@
 package com.dentallab.persistence.entity;
 
-import com.dentallab.api.enums.BridgeVariant;
-import com.dentallab.api.enums.BuildingTechnique;
-import jakarta.persistence.*;
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
+
+import com.dentallab.api.enums.BuildingTechnique;
+import com.dentallab.domain.enums.FixProstheticConstitution;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 
 /**
  * Represents a bridge-type dental work.
@@ -36,19 +52,11 @@ public class BridgeWorkEntity implements Serializable {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "constitution", nullable = false, length = 20)
-    private BridgeVariant variant;  // e.g. MONOLITHIC, STRATIFIED, METAL, TEMPORARY
+    private FixProstheticConstitution constitution;  // e.g. MONOLITHIC, STRATIFIED, METAL, TEMPORARY
 
     @Enumerated(EnumType.STRING)
     @Column(name = "building_technique", nullable = false, length = 20)
     private BuildingTechnique buildingTechnique; // DIGITAL, MANUAL, HYBRID
-
-    @Lob
-    @Column(name = "abutment_teeth", columnDefinition = "JSON")
-    private String abutmentTeeth; // stored as JSON array (["24","26"])
-
-    @Lob
-    @Column(name = "pontic_teeth", columnDefinition = "JSON")
-    private String ponticTeeth;   // stored as JSON array (["25"])
 
     @Column(name = "core_material_id")
     private Long coreMaterialId;
@@ -64,23 +72,44 @@ public class BridgeWorkEntity implements Serializable {
 
     @Column(name = "notes", length = 500)
     private String notes;
+    
+    // ==============================================================
+    // Many to One relationship with BridToothEntity which is a join
+    // table for a Many to Many relationship with ToothRefEntity
+    // ==============================================================
+    @OneToMany(
+	    mappedBy = "bridgeWork",
+	    cascade = CascadeType.ALL,
+	    orphanRemoval = true
+	)
+	private Set<BridgeToothEntity> bridgeTeeth = new HashSet<>();
+
 
     // ==========================================================
     // CONSTRUCTORS
     // ==========================================================
 
-    public BridgeWorkEntity() {}
+    public BridgeWorkEntity() { }
 
-    public BridgeWorkEntity(Long id, WorkEntity work, BridgeVariant variant,
-                            BuildingTechnique buildingTechnique, String abutmentTeeth,
-                            String ponticTeeth, Long coreMaterialId, Long veneeringMaterialId,
-                            String connectorType, String ponticDesign, String notes) {
-        this.id = id;
+    public BridgeWorkEntity(WorkEntity work) {
         this.work = work;
-        this.variant = variant;
+        this.id = work.getId();
+    }
+
+    public BridgeWorkEntity(
+            WorkEntity work,
+            FixProstheticConstitution constitution,
+            BuildingTechnique buildingTechnique,
+            Long coreMaterialId,
+            Long veneeringMaterialId,
+            String connectorType,
+            String ponticDesign,
+            String notes
+    ) {
+        this.work = work;
+        this.id = work.getId();
+        this.constitution = constitution;
         this.buildingTechnique = buildingTechnique;
-        this.abutmentTeeth = abutmentTeeth;
-        this.ponticTeeth = ponticTeeth;
         this.coreMaterialId = coreMaterialId;
         this.veneeringMaterialId = veneeringMaterialId;
         this.connectorType = connectorType;
@@ -108,12 +137,12 @@ public class BridgeWorkEntity implements Serializable {
         this.work = work;
     }
 
-    public BridgeVariant getVariant() {
-        return variant;
+    public FixProstheticConstitution getConstitution() {
+        return constitution;
     }
 
-    public void setVariant(BridgeVariant variant) {
-        this.variant = variant;
+    public void setConstitution(FixProstheticConstitution constitution) {
+        this.constitution = constitution;
     }
 
     public BuildingTechnique getBuildingTechnique() {
@@ -122,22 +151,6 @@ public class BridgeWorkEntity implements Serializable {
 
     public void setBuildingTechnique(BuildingTechnique buildingTechnique) {
         this.buildingTechnique = buildingTechnique;
-    }
-
-    public String getAbutmentTeeth() {
-        return abutmentTeeth;
-    }
-
-    public void setAbutmentTeeth(String abutmentTeeth) {
-        this.abutmentTeeth = abutmentTeeth;
-    }
-
-    public String getPonticTeeth() {
-        return ponticTeeth;
-    }
-
-    public void setPonticTeeth(String ponticTeeth) {
-        this.ponticTeeth = ponticTeeth;
     }
 
     public Long getCoreMaterialId() {
@@ -190,7 +203,7 @@ public class BridgeWorkEntity implements Serializable {
         if (!(o instanceof BridgeWorkEntity)) return false;
         BridgeWorkEntity that = (BridgeWorkEntity) o;
         return Objects.equals(id, that.id)
-                && variant == that.variant
+                && constitution == that.constitution
                 && buildingTechnique == that.buildingTechnique
                 && Objects.equals(coreMaterialId, that.coreMaterialId)
                 && Objects.equals(veneeringMaterialId, that.veneeringMaterialId);
@@ -198,19 +211,25 @@ public class BridgeWorkEntity implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, variant, buildingTechnique, coreMaterialId, veneeringMaterialId);
+        return Objects.hash(id, constitution, buildingTechnique, coreMaterialId, veneeringMaterialId);
     }
 
     @Override
     public String toString() {
         return "BridgeWorkEntity{" +
                 "id=" + id +
-                ", variant=" + variant +
+                ", constitution=" + constitution +
                 ", buildingTechnique=" + buildingTechnique +
-                ", abutmentTeeth=" + abutmentTeeth +
-                ", ponticTeeth=" + ponticTeeth +
                 ", connectorType='" + connectorType + '\'' +
                 ", ponticDesign='" + ponticDesign + '\'' +
                 '}';
     }
+
+	public Set<BridgeToothEntity> getBridgeTeeth() {
+		return bridgeTeeth;
+	}
+
+	public void setBridgeTeeth(Set<BridgeToothEntity> bridgeTeeth) {
+		this.bridgeTeeth = bridgeTeeth;
+	}
 }

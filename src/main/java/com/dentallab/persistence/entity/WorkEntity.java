@@ -41,6 +41,15 @@ public class WorkEntity implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "client_id", nullable = false)
     private ClientEntity client;
+    
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+        name = "work_id",
+        referencedColumnName = "work_id",
+        insertable = false,
+        updatable = false
+    )
+    private WorkPriceEntity price;
 
     // ----------------------------------------------------------
     // 🔥 Lookup references instead of strings
@@ -138,6 +147,9 @@ public class WorkEntity implements Serializable {
 
     public ClientEntity getClient() { return client; }
     public void setClient(ClientEntity client) { this.client = client; }
+    
+    public WorkPriceEntity getPrice() { return price; }
+    public void setPrice(WorkPriceEntity price) { this.price = price; }
 
     public WorkFamilyRefEntity getWorkFamily() { return workFamily; }
     public void setWorkFamily(WorkFamilyRefEntity workFamily) { this.workFamily = workFamily; }
