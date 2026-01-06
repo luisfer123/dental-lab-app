@@ -115,10 +115,10 @@ public class WorkEntity implements Serializable {
     )
     private List<WorkCategoryEntity> categories = new ArrayList<>();
 
-    @OneToOne(mappedBy = "work", fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "work", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private CrownWorkEntity crownWork;
 
-    @OneToOne(mappedBy = "work", fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "work", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private BridgeWorkEntity bridgeWork;
 
     // ==========================================================

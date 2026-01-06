@@ -62,10 +62,7 @@ public class CrownWorkAssembler extends RepresentationModelAssemblerSupport<Crow
        ========================================================== */
     public CrownWorkEntity toEntity(CrownWorkModel model, WorkEntity work) {
 
-        CrownWorkEntity entity = new CrownWorkEntity();
-
-        // Assign FK
-        entity.setWork(work);
+        CrownWorkEntity entity = new CrownWorkEntity(work);
 
         // Common fields
         entity.setNotes(model.getNotes());

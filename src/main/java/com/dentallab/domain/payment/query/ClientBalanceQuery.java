@@ -1,13 +1,14 @@
 package com.dentallab.domain.payment.query;
 
-import com.dentallab.domain.payment.model.ClientBalanceSnapshot;
+import java.math.BigDecimal;
 
+/**
+ * Read-only query API for client balance.
+ */
 public interface ClientBalanceQuery {
 
     /**
-     * Returns the current client balance snapshot.
-     * If the client has no balance record, implementations
-     * may return a zero-balance inactive snapshot.
+     * Returns the authoritative ledger balance (SUM of movements).
      */
-    ClientBalanceSnapshot getClientBalance(Long clientId);
+    BigDecimal getLedgerBalance(Long clientId);
 }

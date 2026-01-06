@@ -38,15 +38,12 @@ import com.dentallab.persistence.entity.WorkFamilyRefEntity;
 import com.dentallab.persistence.entity.WorkOrderEntity;
 import com.dentallab.persistence.entity.WorkStatusRefEntity;
 import com.dentallab.persistence.entity.WorkTypeRefEntity;
-import com.dentallab.persistence.repository.BridgeWorkRepository;
 import com.dentallab.persistence.repository.ClientRepository;
-import com.dentallab.persistence.repository.CrownWorkRepository;
 import com.dentallab.persistence.repository.WorkFamilyRefRepository;
 import com.dentallab.persistence.repository.WorkOrderRepository;
 import com.dentallab.persistence.repository.WorkRepository;
 import com.dentallab.persistence.repository.WorkStatusRefRepository;
 import com.dentallab.persistence.repository.WorkTypeRefRepository;
-import com.dentallab.service.BridgeWorkService;
 import com.dentallab.service.CrownWorkService;
 import com.dentallab.service.WorkService;
 import com.dentallab.util.PagingUtils;
@@ -60,8 +57,6 @@ public class WorkServiceImpl implements WorkService {
     private static final Logger log = LoggerFactory.getLogger(WorkServiceImpl.class);
 
     private final WorkRepository workRepository;
-    private final CrownWorkRepository crownRepository;
-    private final BridgeWorkRepository bridgeRepository;
     
     private final ClientRepository clientRepository;
     
@@ -72,30 +67,22 @@ public class WorkServiceImpl implements WorkService {
     private final WorkOrderRepository orderRepository;
     
     private final CrownWorkService crownWorkService;
-    private final BridgeWorkService bridgeWorkService;
     
     private final WorkAssembler workAssembler;
     private final FullWorkAssembler fullWorkAssembler;
-    private final BridgeWorkAssembler bridgeWorkAssembler;
 
     public WorkServiceImpl(
             WorkRepository workRepository,
             WorkAssembler workAssembler,
             FullWorkAssembler fullWorkAssembler,
-            CrownWorkRepository crownRepository,
-            BridgeWorkRepository bridgeRepository,
             ClientRepository clientRepository,
             WorkTypeRefRepository workTypeRefRepository,
             WorkFamilyRefRepository workFamilyRefRepository,
             CrownWorkService crownWorkService,
-            BridgeWorkService bridgeWorkService,
             WorkOrderRepository orderRepository,
-            WorkStatusRefRepository statusRefRepository,
-            BridgeWorkAssembler bridgeWorkAssembler
+            WorkStatusRefRepository statusRefRepository
     ) {
         this.workRepository = workRepository;
-        this.crownRepository = crownRepository;
-        this.bridgeRepository = bridgeRepository;
         
         this.clientRepository = clientRepository;
         
@@ -106,11 +93,9 @@ public class WorkServiceImpl implements WorkService {
         this.orderRepository = orderRepository;
         
         this.crownWorkService = crownWorkService;
-        this.bridgeWorkService = bridgeWorkService;
         
         this.fullWorkAssembler = fullWorkAssembler;
         this.workAssembler = workAssembler;
-        this.bridgeWorkAssembler = bridgeWorkAssembler;
     }
 
     // ==========================================================
@@ -279,14 +264,14 @@ public class WorkServiceImpl implements WorkService {
                     CrownWorkModel model = (CrownWorkModel) ext;
                     CrownWorkEntity extEntity =
                             crownWorkService.toEntity(model, work);
-                    crownRepository.save(extEntity);
+                    work.setCrownWork(extEntity);
                 }
 
                 case "BRIDGE" -> {
                     BridgeWorkModel model = (BridgeWorkModel) ext;
                     BridgeWorkEntity extEntity =
                             BridgeWorkAssembler.toEntity(model, work);
-                    bridgeRepository.save(extEntity);
+                    work.setBridgeWork(extEntity);
                 }
 
                 default -> throw new IllegalArgumentException(
@@ -302,8 +287,6 @@ public class WorkServiceImpl implements WorkService {
         // ---------------------------------------------------------
         return fullWorkAssembler.toModel(work);
     }
-
-
 
     @Override
     @Transactional

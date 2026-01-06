@@ -1,7 +1,6 @@
 package com.dentallab.service.impl;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.dentallab.api.assembler.FullWorkOrderAssembler;
 import com.dentallab.api.assembler.WorkOrderAssembler;
 import com.dentallab.api.model.FullWorkOrderModel;
-import com.dentallab.api.model.WorkModel;
 import com.dentallab.api.model.WorkOrderModel;
 import com.dentallab.persistence.entity.ClientEntity;
 import com.dentallab.persistence.entity.WorkOrderEntity;

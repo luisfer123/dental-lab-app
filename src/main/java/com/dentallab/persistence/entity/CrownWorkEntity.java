@@ -63,10 +63,13 @@ public class CrownWorkEntity {
     // --------------------------------------------------
     public CrownWorkEntity() {
     }
+    
+    public CrownWorkEntity(WorkEntity work) {
+    	this.work = work;
+    }
 
-    public CrownWorkEntity(Long id, WorkEntity work, FixProstheticConstitution constitution, BuildingTechnique buildingTechnique,
+    public CrownWorkEntity(WorkEntity work, FixProstheticConstitution constitution, BuildingTechnique buildingTechnique,
                            String toothNumber, Long coreMaterialId, Long veneeringMaterialId, String notes) {
-        this.id = id;
         this.work = work;
         this.constitution = constitution;
         this.buildingTechnique = buildingTechnique;
@@ -82,10 +85,6 @@ public class CrownWorkEntity {
 
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public WorkEntity getWork() {

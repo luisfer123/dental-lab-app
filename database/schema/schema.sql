@@ -687,11 +687,13 @@ CREATE TABLE payment (
   amount_total DECIMAL(12,2) NOT NULL,
   currency     CHAR(3) DEFAULT 'MXN',
   status ENUM('RECEIVED', 'CANCELLED') DEFAULT 'RECEIVED',
+  idempotency_key VARCHAR(64) NOT NULL,
   last_updated TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6)
                  ON UPDATE CURRENT_TIMESTAMP(6),
   reference    VARCHAR(100),
   notes        VARCHAR(255),
-  FOREIGN KEY (client_id) REFERENCES client(client_id) ON DELETE CASCADE
+  FOREIGN KEY (client_id) REFERENCES client(client_id) ON DELETE CASCADE,
+  CONSTRAINT uq_payment_idempotency UNIQUE (idempotency_key)
 ) ENGINE=InnoDB;
 
 CREATE TABLE payment_allocation (

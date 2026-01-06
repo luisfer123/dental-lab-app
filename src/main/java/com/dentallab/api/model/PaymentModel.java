@@ -1,7 +1,6 @@
 package com.dentallab.api.model;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 import org.springframework.hateoas.RepresentationModel;
