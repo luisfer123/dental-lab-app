@@ -1,14 +1,24 @@
 package com.dentallab.domain.payment.service;
 
-import java.math.BigDecimal;
-import java.util.List;
+import com.dentallab.domain.payment.dto.PaymentPreviewRequest;
+import com.dentallab.domain.payment.dto.PaymentPreviewResult;
 
-import com.dentallab.domain.payment.model.PaymentAllocationRequest;
-import com.dentallab.domain.payment.model.PaymentPreview;
-
+/**
+ * <p>
+ * Service responsible for computing a read-only preview
+ * of a payment registration.
+ * </p>
+ * <p>
+ * IMPORTANT: This service provides a non-authoritative preview only.
+ * All invariants are re-validated during {@link PaymentService#registerPayment}.
+ * Callers must never assume preview results are binding.
+ * </p>
+ */
 public interface PaymentPreviewService {
 
-    PaymentPreview preview(Long clientId,
-                           BigDecimal paymentAmount,
-                           List<PaymentAllocationRequest> requestedAllocations);
+	/**
+	 
+	 */
+
+    PaymentPreviewResult preview(PaymentPreviewRequest request);
 }

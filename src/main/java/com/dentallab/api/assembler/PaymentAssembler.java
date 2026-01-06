@@ -1,8 +1,5 @@
 package com.dentallab.api.assembler;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
-
 import java.time.ZoneId;
 
 import org.springframework.hateoas.server.mvc.RepresentationModelAssemblerSupport;
@@ -25,7 +22,7 @@ public class PaymentAssembler
 
         PaymentModel model = new PaymentModel();
 
-        model.setId(entity.getPaymentId());
+        model.setId(entity.getId());
         model.setClientId(entity.getClientId());
         model.setAmountTotal(entity.getAmountTotal());
         model.setCurrency(entity.getCurrency());
@@ -36,13 +33,13 @@ public class PaymentAssembler
         model.setReceivedAt(entity.getReceivedAt() != null ? entity.getReceivedAt().atZone(ZoneId.systemDefault()).toLocalDateTime() : null);
         model.setLastUpdated(entity.getLastUpdated() != null ? entity.getLastUpdated().atZone(ZoneId.systemDefault()).toLocalDateTime() : null);
 
-        model.add(linkTo(
-                methodOn(PaymentController.class).getPaymentById(entity.getPaymentId())
-        ).withSelfRel());
-
-        model.add(linkTo(
-                methodOn(PaymentController.class).getPaymentsByClient(entity.getClientId())
-        ).withRel("client-payments"));
+//        model.add(linkTo(
+//                methodOn(PaymentController.class).getPaymentById(entity.getPaymentId())
+//        ).withSelfRel());
+//
+//        model.add(linkTo(
+//                methodOn(PaymentController.class).getPaymentsByClient(entity.getClientId())
+//        ).withRel("client-payments"));
 
         return model;
     }

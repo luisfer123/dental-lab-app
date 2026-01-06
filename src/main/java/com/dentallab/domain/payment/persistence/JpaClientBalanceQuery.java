@@ -1,50 +1,32 @@
 package com.dentallab.domain.payment.persistence;
 
 import java.math.BigDecimal;
-import java.util.Objects;
 
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Component;
 
-import com.dentallab.domain.payment.model.ClientBalanceSnapshot;
 import com.dentallab.domain.payment.query.ClientBalanceQuery;
-import com.dentallab.persistence.repository.ClientBalanceRepository;
 
-@Repository
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
+@Component
 public class JpaClientBalanceQuery implements ClientBalanceQuery {
 
-    private final ClientBalanceRepository balanceRepository;
-
-    public JpaClientBalanceQuery(ClientBalanceRepository balanceRepository) {
-        this.balanceRepository = balanceRepository;
-    }
+    @PersistenceContext
+    private EntityManager em;
 
     @Override
-    public ClientBalanceSnapshot getClientBalance(Long clientId) {
-        Objects.requireNonNull(clientId, "clientId must not be null");
+    public BigDecimal getLedgerBalance(Long clientId) {
+        if (clientId == null) {
+            throw new IllegalArgumentException("clientId must not be null");
+        }
 
-        return balanceRepository.findByClientId(clientId)
-                .map(b -> {
-                    BigDecimal balance = b.getAmount() != null ? b.getAmount() : BigDecimal.ZERO;
-
-                    // Domain invariant: usable balance is never negative
-                    if (balance.signum() < 0) {
-                        balance = BigDecimal.ZERO;
-                    }
-
-                    return new ClientBalanceSnapshot(
-                            clientId,
-                            balance,
-                            b.getCurrency() != null ? b.getCurrency() : "MXN",
-                            Boolean.TRUE.equals(b.getActive())
-                    );
-                })
-                .orElseGet(() ->
-                        new ClientBalanceSnapshot(
-                                clientId,
-                                BigDecimal.ZERO,
-                                "MXN",
-                                false
-                        )
-                );
+        return em.createQuery("""
+            select coalesce(sum(m.amountChange), 0)
+            from ClientBalanceMovementEntity m
+            where m.clientId = :clientId
+        """, BigDecimal.class)
+        .setParameter("clientId", clientId)
+        .getSingleResult();
     }
 }

@@ -115,5 +115,12 @@ public interface WorkRepository
 				ORDER BY w.createdAt ASC
         """)
         List<WorkEntity> findUnpaidWorksByClientId(@Param("clientId") Long clientId);
+    
+    /**
+     * Loads works by ids ensuring they belong to the given client.
+     * Used by payment preview to prevent cross-client allocations.
+     */
+    List<WorkEntity> findByIdInAndClient_Id(List<Long> ids, Long clientId);
+
 
 }

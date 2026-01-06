@@ -14,7 +14,7 @@ public class PaymentEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "payment_id")
-    private Long paymentId;
+    private Long id;
 
     @Column(name = "client_id", nullable = false)
     private Long clientId;
@@ -34,6 +34,9 @@ public class PaymentEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20)
     private PaymentStatus status = PaymentStatus.RECEIVED;
+    
+    @Column(name = "idempotency_key", nullable = false, unique = true, length = 64)
+    private String idempotencyKey;
 
     @Column(name = "last_updated")
     private Instant lastUpdated;
@@ -60,12 +63,12 @@ public class PaymentEntity {
 
     // -------- getters / setters --------
 
-    public Long getPaymentId() {
-        return paymentId;
+    public Long getId() {
+        return id;
     }
 
-    public void setPaymentId(Long paymentId) {
-        this.paymentId = paymentId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Long getClientId() {
@@ -115,6 +118,14 @@ public class PaymentEntity {
     public void setStatus(PaymentStatus status) {
         this.status = status;
     }
+    
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
 
     public Instant getLastUpdated() {
         return lastUpdated;
@@ -146,18 +157,18 @@ public class PaymentEntity {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof PaymentEntity that)) return false;
-        return paymentId != null && paymentId.equals(that.paymentId);
+        return id != null && id.equals(that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(paymentId);
+        return Objects.hashCode(id);
     }
 
     @Override
     public String toString() {
         return "PaymentEntity{" +
-                "paymentId=" + paymentId +
+                "id=" + id +
                 ", clientId=" + clientId +
                 ", receivedAt=" + receivedAt +
                 ", method='" + method + '\'' +

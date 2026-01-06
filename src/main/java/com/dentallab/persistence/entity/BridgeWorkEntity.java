@@ -93,7 +93,6 @@ public class BridgeWorkEntity implements Serializable {
 
     public BridgeWorkEntity(WorkEntity work) {
         this.work = work;
-        this.id = work.getId();
     }
 
     public BridgeWorkEntity(
@@ -123,10 +122,6 @@ public class BridgeWorkEntity implements Serializable {
 
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public WorkEntity getWork() {
