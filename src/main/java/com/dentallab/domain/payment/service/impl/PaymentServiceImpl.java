@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -88,17 +89,6 @@ public class PaymentServiceImpl implements PaymentService {
 
     	Objects.requireNonNull(request, "request must not be null");
     	Objects.requireNonNull(request.getIdempotencyKey(), "idempotencyKey must not be null");
-    	
-    	if (request.getAllocations().isEmpty() && !request.isMoveRemainderToBalance()) {
-    	    throw new IllegalArgumentException("Payment has no allocations and no balance destination");
-    	}
-
-    	log.info(
-    	        "Registering payment: clientId={}, paymentAmount={}, idempotencyKey={}",
-    	        request.getClientId(),
-    	        request.getPaymentAmount(),
-    	        request.getIdempotencyKey()
-    	);
 
     	// ------------------------------------------------------------
     	// 0. Idempotency check (MUST be first)
@@ -109,33 +99,100 @@ public class PaymentServiceImpl implements PaymentService {
 
     	if (existing != null) {
     	    log.warn(
-    	            "Idempotent payment request detected, returning existing payment: paymentId={}",
-    	            existing.getId()
+    	        "Idempotent payment request detected, returning existing payment: paymentId={}",
+    	        existing.getId()
     	    );
-    	    return; // <-- REAL early exit
+    	    return;
+    	}
+
+    	// ------------------------------------------------------------
+    	// Normalize allocations AFTER idempotency
+    	// ------------------------------------------------------------
+    	List<PaymentAllocationCommand> allocations =
+    	        Objects.requireNonNullElse(request.getAllocations(), List.of());
+
+    	if (allocations.isEmpty() && !request.isMoveRemainderToBalance()) {
+    	    throw new IllegalArgumentException(
+    	        "Payment has no allocations and no balance destination"
+    	    );
+    	}
+
+    	// 🔴 EARLY validation — no DB access
+    	for (PaymentAllocationCommand cmd : allocations) {
+    	    BigDecimal allocation = normalize(cmd.getAllocatedAmount());
+    	    if (allocation.compareTo(ZERO) < 0) {
+    	        throw new IllegalArgumentException("Negative allocation not allowed");
+    	    }
     	}
 
     	BigDecimal paymentAmount = normalize(request.getPaymentAmount());
-
+    	
+    	if (paymentAmount.compareTo(ZERO) <= 0) {
+    	    throw new IllegalArgumentException("Payment amount must be positive");
+    	}
 
         // ------------------------------------------------------------
         // 1. Load and validate works
         // ------------------------------------------------------------
-        List<Long> workIds =
-                request.getAllocations().stream()
-                        .map(PaymentAllocationCommand::getWorkId)
-                        .toList();
+    	List<PaymentAllocationCommand> effectiveAllocations =
+    		    allocations.stream()
+    		        .filter(a -> normalize(a.getAllocatedAmount()).compareTo(ZERO) > 0)
+    		        .toList();
+    	
+    	if (effectiveAllocations.isEmpty()) {
+
+    	    log.info(
+    	        "Payment has no effective allocations (all zero). Entire amount will be treated as remainder. paymentAmount={}, moveToBalance={}",
+    	        paymentAmount,
+    	        request.isMoveRemainderToBalance()
+    	    );
+
+    	    if (!request.isMoveRemainderToBalance()) {
+    	        throw new IllegalStateException(
+    	            "Payment has no effective allocations and remainder was not approved for balance"
+    	        );
+    	    }
+
+    	    // Skip work loading, pricing, allocations entirely
+    	    persistPaymentAndCreditBalanceOnly(request, paymentAmount);
+    	    return;
+    	}
+
+    		List<Long> workIds =
+    		    effectiveAllocations.stream()
+    		        .map(PaymentAllocationCommand::getWorkId)
+    		        .toList();
+        
+        if (new HashSet<>(workIds).size() != workIds.size()) {
+            throw new IllegalArgumentException("Duplicate work allocations are not allowed");
+        }
 
         List<WorkEntity> works =
                 workRepository.findByIdInAndClient_Id(
                         workIds,
                         request.getClientId()
                 );
-
+        
         if (works.size() != new HashSet<>(workIds).size()) {
             throw new IllegalArgumentException(
                     "Some works do not exist or do not belong to the client"
             );
+        }
+        
+        Map<Long, PriceResolution> finalPricesByWorkId =
+        	    resolveFinalPricesForWorks(
+        	        effectiveAllocations.stream()
+        	            .map(PaymentAllocationCommand::getWorkId)
+        	            .toList()
+        	    );
+        
+        for(PaymentAllocationCommand alloc : effectiveAllocations) {
+        	if(alloc.getAllocatedAmount()
+        			.compareTo(finalPricesByWorkId.get(alloc.getWorkId()).getFinalPrice()) > 0) {
+        		throw new IllegalArgumentException(
+						"Allocation exceeds work price: workId=" + alloc.getWorkId()
+						);
+        	}
         }
 
         // ------------------------------------------------------------
@@ -166,53 +223,93 @@ public class PaymentServiceImpl implements PaymentService {
         // 3. Apply allocations (re-validate unpaid amounts)
         // ------------------------------------------------------------
         BigDecimal allocatedTotal = ZERO;
+        
+        Set<Long> workIdsSet =
+        	    effectiveAllocations.stream()
+        	        .map(PaymentAllocationCommand::getWorkId)
+        	        .collect(java.util.stream.Collectors.toSet());
 
-        for (PaymentAllocationCommand cmd : request.getAllocations()) {
+        Map<Long, BigDecimal> cashPaid =
+                paymentStatusQuery.findCashPaidAmountsByWorkIds(workIdsSet);
+
+        Map<Long, BigDecimal> balancePaid =
+                paymentStatusQuery.findBalancePaidAmountsByWorkIds(workIdsSet);
+
+
+        for (PaymentAllocationCommand cmd : effectiveAllocations) {
 
             BigDecimal allocation = normalize(cmd.getAllocatedAmount());
+
+            // 🔵 (UNCHANGED) skip zero allocations defensively
             if (allocation.compareTo(ZERO) == 0) {
+                log.debug(
+                    "Skipping zero allocation: workId={}, paymentId={}",
+                    cmd.getWorkId(),
+                    payment.getId()
+                );
                 continue;
             }
 
-            PriceResolution price =
-                    workPricingService.resolveFinalPrice(
-                            PriceResolutionRequest.forWork(cmd.getWorkId())
-                    );
+            // 🔴 (CHANGED) defensive lookup + explicit error
+            PriceResolution price = finalPricesByWorkId.get(cmd.getWorkId());
+            if (price == null) {
+                throw new IllegalStateException(
+                    "Final price not resolved for workId=" + cmd.getWorkId()
+                );
+            }
 
-            BigDecimal finalPrice = normalize(price.getFinalPrice());	
+            BigDecimal finalPrice = normalize(price.getFinalPrice());
 
+            // 🔴 (CHANGED) compute already-paid using normalized defaults
             BigDecimal alreadyPaid =
-                    paymentStatusQuery.findCashPaidAmountsByWorkIds(
-                            Set.of(cmd.getWorkId())
-                    ).getOrDefault(cmd.getWorkId(), ZERO)
-                    .add(
-                        paymentStatusQuery.findBalancePaidAmountsByWorkIds(
-                                Set.of(cmd.getWorkId())
-                        ).getOrDefault(cmd.getWorkId(), ZERO)
+                    normalize(
+                        cashPaid.getOrDefault(cmd.getWorkId(), ZERO)
+                            .add(balancePaid.getOrDefault(cmd.getWorkId(), ZERO))
                     );
 
             BigDecimal unpaid = normalize(finalPrice.subtract(alreadyPaid));
 
+            log.debug(
+                "Validating allocation: paymentId={}, workId={}, allocation={}, finalPrice={}, alreadyPaid={}, unpaid={}",
+                payment.getId(),
+                cmd.getWorkId(),
+                allocation,
+                finalPrice,
+                alreadyPaid,
+                unpaid
+            );
+
+            // 🔴 (UNCHANGED logic, but now logged)
             if (allocation.compareTo(unpaid) > 0) {
                 throw new IllegalStateException(
-                        "Allocation exceeds unpaid amount for workId=" + cmd.getWorkId()
+                    "Allocation exceeds unpaid amount for workId=" + cmd.getWorkId()
                 );
             }
 
+            // 🔵 (UNCHANGED) persist allocation
             PaymentAllocationEntity pa = new PaymentAllocationEntity();
-            pa.setPaymentId(payment.getId());
-            pa.setWorkId(cmd.getWorkId());
+            pa.setPayment(payment);
+            pa.setWork(
+                works.stream()
+                     .filter(w -> w.getId().equals(cmd.getWorkId()))
+                     .findFirst()
+                     .orElseThrow(() ->
+                         new IllegalStateException(
+                             "Work not loaded for allocation: workId=" + cmd.getWorkId()
+                         )
+                     )
+            );
             pa.setAmountApplied(allocation);
 
             paymentAllocationRepository.save(pa);
 
             allocatedTotal = normalize(allocatedTotal.add(allocation));
 
-            log.debug(
-                    "Applied allocation: paymentId={}, workId={}, amount={}",
-                    payment.getId(),
-                    cmd.getWorkId(),
-                    allocation
+            log.info(
+                "Applied allocation successfully: paymentId={}, workId={}, amount={}",
+                payment.getId(),
+                cmd.getWorkId(),
+                allocation
             );
         }
         
@@ -266,4 +363,59 @@ public class PaymentServiceImpl implements PaymentService {
     private static BigDecimal normalize(BigDecimal v) {
         return v == null ? ZERO : v.setScale(2, RoundingMode.HALF_UP);
     }
+    
+    private Map<Long, PriceResolution> resolveFinalPricesForWorks(List<Long> workIds) {
+        return workIds.stream()
+            .distinct()
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    id -> id,
+                    id -> {
+                        PriceResolution pr =
+                            workPricingService.resolveFinalPrice(
+                                PriceResolutionRequest.forWork(id)
+                            );
+
+                        if (pr == null) {
+                            throw new IllegalStateException(
+                                "Final price resolution returned null for workId=" + id
+                            );
+                        }
+                        return pr;
+                    }
+                )
+            );
+    }
+    
+    private void persistPaymentAndCreditBalanceOnly(RegisterPaymentRequest request,
+            BigDecimal amount) {
+
+		PaymentEntity payment = new PaymentEntity();
+		payment.setClientId(request.getClientId());
+		payment.setReceivedAt(Instant.now());
+		payment.setMethod(request.getMethod());
+		payment.setReference(request.getReference());
+		payment.setNotes(request.getNotes());
+		payment.setAmountTotal(amount);
+		payment.setStatus(PaymentStatus.RECEIVED);
+		payment.setIdempotencyKey(request.getIdempotencyKey());
+		
+		paymentRepository.save(payment);
+		
+		clientBalanceService.creditBalance(
+			request.getClientId(),
+			amount,
+			"PAY_EXCESS",
+			payment.getId(),
+			null,
+			"Payment with no allocations credited entirely to balance"
+			);
+			
+			log.info(
+				"Payment with no allocations completed: paymentId={}, creditedToBalance={}",
+				payment.getId(),
+				amount
+		);
+	}
+
 }

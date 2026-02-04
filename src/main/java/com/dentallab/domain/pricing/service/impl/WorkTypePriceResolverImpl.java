@@ -1,4 +1,4 @@
-package com.dentallab.domain.pricing.service;
+package com.dentallab.domain.pricing.service.impl;
 
 import java.math.BigDecimal;
 import java.util.Objects;
@@ -12,6 +12,8 @@ import com.dentallab.domain.pricing.model.PriceResolutionRequest;
 import com.dentallab.domain.pricing.model.WorkPricingView;
 import com.dentallab.domain.pricing.query.WorkPricingQuery;
 import com.dentallab.domain.pricing.query.WorkTypePriceQuery;
+import com.dentallab.domain.pricing.service.FinalWorkPriceResolver;
+import com.dentallab.domain.pricing.service.WorkTypePriceResolver;
 import com.dentallab.persistence.entity.WorkTypePriceEntity;
 
 /**

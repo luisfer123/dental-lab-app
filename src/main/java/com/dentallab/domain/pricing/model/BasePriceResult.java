@@ -41,4 +41,20 @@ public class BasePriceResult {
     public Long getWorkTypePriceId() {
         return workTypePriceId;
     }
+    
+    @Override
+    public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		BasePriceResult that = (BasePriceResult) o;
+		return basePrice.equals(that.basePrice) &&
+				currency.equals(that.currency) &&
+				priceGroup.equals(that.priceGroup) &&
+				Objects.equals(workTypePriceId, that.workTypePriceId);
+	}
+    
+    @Override
+	public int hashCode() {
+		return Objects.hash(basePrice, currency, priceGroup, workTypePriceId);
+	}
 }

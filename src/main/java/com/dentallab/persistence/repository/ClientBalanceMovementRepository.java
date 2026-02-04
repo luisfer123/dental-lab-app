@@ -15,7 +15,7 @@ public interface ClientBalanceMovementRepository extends JpaRepository<ClientBal
 
 	List<ClientBalanceMovementEntity> findByPaymentId(Long paymentId);
 
-	List<ClientBalanceMovementEntity> findByWorkId(Long workId);
+	List<ClientBalanceMovementEntity> findByWork_id(Long workId);
 	
 	/**
      * Authoritative balance = SUM(amountChange) across all movements for the client.

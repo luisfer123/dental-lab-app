@@ -55,11 +55,23 @@ public class WorkTypePriceEntity {
     @Column(name = "price_per_unit")
     private BigDecimal pricePerUnit;
 
-    @Column(name = "currency")
+    @Column(name = "currency", nullable = false)
     private String currency;
 
     @Column(name = "valid_from", nullable = false)
     private LocalDate validFrom;
+    
+    @Column(name = "notes")
+    private String notes;
+    
+    @Column(name = "denture_variant")
+    private String dentureVariant;
+
+    @Column(name = "resin_type")
+    private String resinType;
+
+    @Column(name = "teeth_type")
+    private String teethType;
 
     // ---------------------------------------------------------------------
     // Getters
@@ -107,6 +119,22 @@ public class WorkTypePriceEntity {
 
     public LocalDate getValidFrom() {
         return validFrom;
+    }
+    
+    public String getNotes() {
+    	return notes;
+    }
+    
+    public String getDentureVariant() {
+        return dentureVariant;
+    }
+
+    public String getResinType() {
+        return resinType;
+    }
+
+    public String getTeethType() {
+        return teethType;
     }
 
     // ---------------------------------------------------------------------
@@ -156,6 +184,22 @@ public class WorkTypePriceEntity {
     public void setValidFrom(LocalDate validFrom) {
         this.validFrom = validFrom;
     }
+    
+    public void setNotes(String notes) {
+    	this.notes = notes;
+    }
+    
+    public void setDentureVariant(String dentureVariant) {
+        this.dentureVariant = dentureVariant;
+    }
+
+    public void setResinType(String resinType) {
+        this.resinType = resinType;
+    }
+
+    public void setTeethType(String teethType) {
+        this.teethType = teethType;
+    }
 
     // ---------------------------------------------------------------------
     // equals / hashCode (JPA identity-based)
@@ -191,6 +235,10 @@ public class WorkTypePriceEntity {
                 ", pricePerUnit=" + pricePerUnit +
                 ", currency='" + currency + '\'' +
                 ", validFrom=" + validFrom +
+                ", notes='" + notes + '\'' +
+                ", dentureVariant='" + dentureVariant + '\'' +
+                ", resinType='" + resinType + '\'' +
+                ", teethType='" + teethType + '\'' +
                 '}';
     }
 }

@@ -514,6 +514,9 @@ CREATE TABLE material_usage (
 -- un trabajo ya creado debe ser work_price.price
 -- Si se quiere modificar el precio de un trabajo especifico se deberia hacer agregado una o mas entradas a work_item_price_override.ajustment 
 -- asociadas al trabajo en cuestion. 
+-- IMPORTANT DOMAIN RULE:
+-- A work MUST have a WorkPrice before any payment or balance allocation.
+-- work_type_price is policy, work_price is commitment.
 CREATE TABLE work_type_price (
   price_id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
@@ -521,55 +524,81 @@ CREATE TABLE work_type_price (
   work_family VARCHAR(50) NOT NULL,
   work_type   VARCHAR(50) NOT NULL,
 
-  price_group VARCHAR(50) NOT NULL DEFAULT 'DEFAULT',  -- Permite crear precios especiales como precio para combenio con una universidad o por urgencia de trabajo.
-  
-  -- -------------------------------------------------------------------------
-  -- Atributos tarifarios opcionales (solo se llenan si influyen en el precio)
-  -- Si un campo es NULL → el precio aplica a cualquier valor ("comodín")
-  -- -------------------------------------------------------------------------
-
-  constitution       VARCHAR(50) NULL,        -- MONOLITHIC / STRATIFIED / METAL / TEMPORARY...
-  building_technique VARCHAR(50) NULL,        -- DIGITAL / MANUAL / HYBRID
-  denture_variant    VARCHAR(50) NULL,        -- STANDARD / PREMIUM / IMMEDIATE...
-  resin_type         VARCHAR(50) NULL,        -- para placas (inyectada, termo-curado, etc.)
-  teeth_type         VARCHAR(50) NULL,        -- dientes premium/estándar, etc.
+  price_group VARCHAR(50) NOT NULL DEFAULT 'DEFAULT',
 
   -- -------------------------------------------------------------------------
-  -- Precios: uno de estos dos debe estar presente
+  -- Atributos tarifarios reales (dominio)
+  -- NULL = comodín
   -- -------------------------------------------------------------------------
 
-  base_price     DECIMAL(12,2) NULL,          -- coronas, inlays, trabajos unitarios
-  price_per_unit DECIMAL(12,2) NULL,          -- puentes (precio por unidad protésica)
+  constitution       VARCHAR(50) NULL,
+  building_technique VARCHAR(50) NULL,
+  core_material_id   BIGINT NULL,
+  denture_variant    VARCHAR(50) NULL,
+  resin_type         VARCHAR(50) NULL,
+  teeth_type         VARCHAR(50) NULL,
+
+  -- -------------------------------------------------------------------------
+  -- Columnas normalizadas (infraestructura)
+  -- NULL → valor canónico para unicidad
+  -- -------------------------------------------------------------------------
+
+  constitution_key       VARCHAR(50)
+      GENERATED ALWAYS AS (COALESCE(constitution, '*')) STORED,
+
+  building_technique_key VARCHAR(50)
+      GENERATED ALWAYS AS (COALESCE(building_technique, '*')) STORED,
+
+  core_material_key BIGINT
+      GENERATED ALWAYS AS (COALESCE(core_material_id, 0)) STORED,
+
+  denture_variant_key VARCHAR(50)
+      GENERATED ALWAYS AS (COALESCE(denture_variant, '*')) STORED,
+
+  resin_type_key VARCHAR(50)
+      GENERATED ALWAYS AS (COALESCE(resin_type, '*')) STORED,
+
+  teeth_type_key VARCHAR(50)
+      GENERATED ALWAYS AS (COALESCE(teeth_type, '*')) STORED,
+
+  -- -------------------------------------------------------------------------
+  -- Precios
+  -- -------------------------------------------------------------------------
+
+  base_price     DECIMAL(12,2) NULL,
+  price_per_unit DECIMAL(12,2) NULL,
 
   CHECK (base_price IS NOT NULL OR price_per_unit IS NOT NULL),
 
-  currency CHAR(3) DEFAULT 'MXN',
+  currency CHAR(3) NOT NULL DEFAULT 'MXN',
 
   -- -------------------------------------------------------------------------
-  -- Vigencia del precio (solo fecha de inicio)
-  -- El final se deduce del siguiente registro con mismos atributos
+  -- Vigencia
   -- -------------------------------------------------------------------------
 
   valid_from DATE NOT NULL,
-
   notes VARCHAR(255),
 
   -- -------------------------------------------------------------------------
-  -- Evitar duplicados exactos:
-  -- combinación de family + type + atributos + fecha de inicio
+  -- Unicidad semántica real
   -- -------------------------------------------------------------------------
 
-  CONSTRAINT uq_work_type_price UNIQUE (
-      work_family,
-      work_type,
-      price_group,
-      constitution,
-      building_technique,
-      denture_variant,
-      resin_type,
-      teeth_type,
-      valid_from
+  CONSTRAINT uq_work_type_price_norm UNIQUE (
+    work_family,
+    work_type,
+    price_group,
+    constitution_key,
+    building_technique_key,
+    core_material_key,
+    denture_variant_key,
+    resin_type_key,
+    teeth_type_key,
+    valid_from
   ),
+
+  -- -------------------------------------------------------------------------
+  -- FKs
+  -- -------------------------------------------------------------------------
 
   FOREIGN KEY (work_family)
       REFERENCES work_family_ref(code)
@@ -577,6 +606,10 @@ CREATE TABLE work_type_price (
 
   FOREIGN KEY (work_type)
       REFERENCES work_type_ref(code)
+      ON DELETE RESTRICT,
+
+  FOREIGN KEY (core_material_id)
+      REFERENCES material(material_id)
       ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 CREATE INDEX idx_work_type_price_lookup
@@ -590,11 +623,24 @@ CREATE INDEX idx_work_type_price_lookup
 	  teeth_type,
 	  valid_from
 	);
+CREATE INDEX idx_work_type_price_norm
+	ON work_type_price (
+	  work_family,
+	  work_type,
+	  price_group,
+	  constitution_key,
+	  building_technique_key,
+	  core_material_key,
+	  denture_variant_key,
+	  resin_type_key,
+	  teeth_type_key,
+	  valid_from
+	);
 
 -- Es le precio base de un trabajo ya creado. Es la fuente de verdad para el precio de un trabajo ya creado.
 -- recordar que un renglon en work representa un trabajo fisico creado en el laboratorio y no una categoria abstracta. 
 -- en principio se decide usando la tabla work_type_price, si se quiere modificar se agregan entradas en
--- work_item_price_override.ajustment. Al calcular el precio final de un trabajo siempre se usa la formula
+-- work_item_price_override.ajustment. Al calcular el precio final de un trabajo (work_price.price) siempre se usa la formula
 -- work_price.price + Sum(work_item_price_override.ajustmets). Aun asi se considera la fuente de verdad porque
 -- work_type_price.base_price puede cambiar con el tiempo.
 CREATE TABLE work_price (

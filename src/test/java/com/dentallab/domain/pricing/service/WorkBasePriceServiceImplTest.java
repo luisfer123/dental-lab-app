@@ -20,6 +20,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.dentallab.domain.pricing.model.BasePriceResult;
 import com.dentallab.domain.pricing.model.PriceResolutionRequest;
+import com.dentallab.domain.pricing.service.impl.WorkBasePriceServiceImpl;
 import com.dentallab.persistence.entity.WorkEntity;
 import com.dentallab.persistence.repository.WorkPriceRepository;
 

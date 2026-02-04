@@ -1,14 +1,15 @@
 package com.dentallab.domain.payment.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,80 +30,42 @@ import com.dentallab.persistence.repository.WorkRepository;
 class PaymentPreviewServiceTest {
 
     @Mock
-    private WorkRepository workRepository;
+    WorkRepository workRepository;
 
     @Mock
-    private WorkPricingService workPricingService;
+    WorkPricingService workPricingService;
 
     @Mock
-    private WorkPaymentStatusQuery paymentStatusQuery;
+    WorkPaymentStatusQuery paymentStatusQuery;
 
     @InjectMocks
-    private PaymentPreviewServiceImpl service;
-
-    private WorkEntity work1;
-    private WorkEntity work2;
-
-    @BeforeEach
-    void setup() {
-        work1 = new WorkEntity();
-        work1.setId(1L);
-
-        work2 = new WorkEntity();
-        work2.setId(2L);
-    }
+    PaymentPreviewServiceImpl service;
 
     @Test
-    void preview_allocates_payment_in_order_and_computes_remainder() {
+    void preview_allocates_payment_sequentially_with_prior_payments() {
 
         // ----------------------------------------------------
         // Given
         // ----------------------------------------------------
         Long clientId = 10L;
 
-        PaymentPreviewRequest request = new PaymentPreviewRequest();
-        request.setClientId(clientId);
-        request.setPaymentAmount(new BigDecimal("150.00"));
-        request.setSelectedWorkIds(List.of(1L, 2L));
+        WorkEntity work1 = work(1L);
+        WorkEntity work2 = work(2L);
 
-        when(workRepository.findByIdInAndClient_Id(
-                List.of(1L, 2L), clientId))
+        when(workRepository.findByIdInAndClient_Id(List.of(1L, 2L), clientId))
             .thenReturn(List.of(work1, work2));
 
-        // Prices (real constructor)
-        when(workPricingService.resolveFinalPrice(
-                PriceResolutionRequest.forWork(1L)))
-            .thenReturn(new PriceResolution(
-                    new BigDecimal("100.00"),   // basePrice
-                    BigDecimal.ZERO,            // totalOverrides
-                    new BigDecimal("100.00"),   // finalPrice
-                    "MXN",
-                    null,
-                    null,
-                    List.of()
-            ));
+        stubPricing(Map.of(
+            1L, new BigDecimal("100.00"),
+            2L, new BigDecimal("200.00")
+        ));
 
-        when(workPricingService.resolveFinalPrice(
-                PriceResolutionRequest.forWork(2L)))
-            .thenReturn(new PriceResolution(
-                    new BigDecimal("200.00"),
-                    BigDecimal.ZERO,
-                    new BigDecimal("200.00"),
-                    "MXN",
-                    null,
-                    null,
-                    List.of()
-            ));
+        stubPaidAmounts(Map.of(
+            1L, new BigDecimal("50.00")
+        ));
 
-        // Already paid
-        when(paymentStatusQuery.findCashPaidAmountsByWorkIds(Set.of(1L, 2L)))
-            .thenReturn(Map.of(
-                    1L, new BigDecimal("20.00"),
-                    2L, BigDecimal.ZERO
-            ));
-
-        when(paymentStatusQuery.findBalancePaidAmountsByWorkIds(Set.of(1L, 2L)))
-            .thenReturn(Map.of());
+        PaymentPreviewRequest request =
+            previewRequest(clientId, "150.00", List.of(1L, 2L));
 
         // ----------------------------------------------------
         // When
@@ -113,29 +76,311 @@ class PaymentPreviewServiceTest {
         // Then
         // ----------------------------------------------------
         assertThat(result.getTotalUnpaidSelected())
-                .isEqualByComparingTo("280.00"); // (100-20) + 200
+            .isEqualByComparingTo("250.00");
 
         assertThat(result.getTotalAllocated())
-                .isEqualByComparingTo("150.00");
+            .isEqualByComparingTo("150.00");
 
         assertThat(result.getRemainingUnallocated())
-                .isEqualByComparingTo("0.00");
-
-        assertThat(result.isRequiresBalanceConfirmation())
-                .isFalse();
+            .isEqualByComparingTo("0.00");
 
         assertThat(result.getWorkAllocations()).hasSize(2);
 
-        // Work 1
         assertThat(result.getWorkAllocations().get(0).getWorkId())
-                .isEqualTo(1L);
+            .isEqualTo(1L);
         assertThat(result.getWorkAllocations().get(0).getAllocatedAmount())
-                .isEqualByComparingTo("80.00"); // 100 - 20
+            .isEqualByComparingTo("50.00");
 
-        // Work 2
         assertThat(result.getWorkAllocations().get(1).getWorkId())
-                .isEqualTo(2L);
+            .isEqualTo(2L);
         assertThat(result.getWorkAllocations().get(1).getAllocatedAmount())
-                .isEqualByComparingTo("70.00"); // remainder
+            .isEqualByComparingTo("100.00");
+    }
+    
+    @Test
+    void preview_overpayment_requires_balance_confirmation() {
+
+        // ----------------------------------------------------
+        // Given
+        // ----------------------------------------------------
+        Long clientId = 10L;
+
+        WorkEntity work1 = work(1L);
+        WorkEntity work2 = work(2L);
+
+        when(workRepository.findByIdInAndClient_Id(List.of(1L, 2L), clientId))
+            .thenReturn(List.of(work1, work2));
+
+        // Prices
+        stubPricing(Map.of(
+            1L, new BigDecimal("100.00"),
+            2L, new BigDecimal("200.00")
+        ));
+
+        // No prior payments
+        stubPaidAmounts(Map.of());
+
+        // Payment exceeds total unpaid (300)
+        PaymentPreviewRequest request =
+            previewRequest(clientId, "400.00", List.of(1L, 2L));
+
+        // ----------------------------------------------------
+        // When
+        // ----------------------------------------------------
+        PaymentPreviewResult result = service.preview(request);
+
+        // ----------------------------------------------------
+        // Then
+        // ----------------------------------------------------
+        assertThat(result.getTotalUnpaidSelected())
+            .isEqualByComparingTo("300.00");
+
+        assertThat(result.getTotalAllocated())
+            .isEqualByComparingTo("300.00");
+
+        assertThat(result.getRemainingUnallocated())
+            .isEqualByComparingTo("100.00");
+
+        assertThat(result.isRequiresBalanceConfirmation())
+            .isTrue();
+
+        assertThat(result.getWorkAllocations()).hasSize(2);
+
+        // Work 1 fully paid
+        assertThat(result.getWorkAllocations().get(0).getWorkId())
+            .isEqualTo(1L);
+        assertThat(result.getWorkAllocations().get(0).getAllocatedAmount())
+            .isEqualByComparingTo("100.00");
+
+        // Work 2 fully paid
+        assertThat(result.getWorkAllocations().get(1).getWorkId())
+            .isEqualTo(2L);
+        assertThat(result.getWorkAllocations().get(1).getAllocatedAmount())
+            .isEqualByComparingTo("200.00");
+    }
+    
+    @Test
+    void preview_exact_payment_fully_allocates_without_balance() {
+
+        // ----------------------------------------------------
+        // Given
+        // ----------------------------------------------------
+        Long clientId = 10L;
+
+        WorkEntity work1 = work(1L);
+        WorkEntity work2 = work(2L);
+
+        when(workRepository.findByIdInAndClient_Id(List.of(1L, 2L), clientId))
+            .thenReturn(List.of(work1, work2));
+
+        // Prices
+        stubPricing(Map.of(
+            1L, new BigDecimal("100.00"),
+            2L, new BigDecimal("200.00")
+        ));
+
+        // No prior payments
+        stubPaidAmounts(Map.of());
+
+        // Payment exactly equals total unpaid (300)
+        PaymentPreviewRequest request =
+            previewRequest(clientId, "300.00", List.of(1L, 2L));
+
+        // ----------------------------------------------------
+        // When
+        // ----------------------------------------------------
+        PaymentPreviewResult result = service.preview(request);
+
+        // ----------------------------------------------------
+        // Then
+        // ----------------------------------------------------
+        assertThat(result.getTotalUnpaidSelected())
+            .isEqualByComparingTo("300.00");
+
+        assertThat(result.getTotalAllocated())
+            .isEqualByComparingTo("300.00");
+
+        assertThat(result.getRemainingUnallocated())
+            .isEqualByComparingTo("0.00");
+
+        assertThat(result.isRequiresBalanceConfirmation())
+            .isFalse();
+
+        assertThat(result.getWorkAllocations()).hasSize(2);
+
+        // Work 1 fully paid
+        assertThat(result.getWorkAllocations().get(0).getWorkId())
+            .isEqualTo(1L);
+        assertThat(result.getWorkAllocations().get(0).getAllocatedAmount())
+            .isEqualByComparingTo("100.00");
+
+        // Work 2 fully paid
+        assertThat(result.getWorkAllocations().get(1).getWorkId())
+            .isEqualTo(2L);
+        assertThat(result.getWorkAllocations().get(1).getAllocatedAmount())
+            .isEqualByComparingTo("200.00");
+    }
+    
+    @Test
+    void preview_respects_selected_work_order_not_repository_order() {
+
+        // ----------------------------------------------------
+        // Given
+        // ----------------------------------------------------
+        Long clientId = 10L;
+
+        WorkEntity work1 = work(1L);
+        WorkEntity work2 = work(2L);
+
+        // Repository returns works in reverse order
+        when(workRepository.findByIdInAndClient_Id(List.of(2L, 1L), clientId))
+            .thenReturn(List.of(work2, work1));
+
+        stubPricing(Map.of(
+            1L, new BigDecimal("100.00"),
+            2L, new BigDecimal("200.00")
+        ));
+
+        stubPaidAmounts(Map.of());
+
+        // User explicitly selects order: [2, 1]
+        PaymentPreviewRequest request =
+            previewRequest(clientId, "150.00", List.of(2L, 1L));
+
+        // ----------------------------------------------------
+        // When
+        // ----------------------------------------------------
+        PaymentPreviewResult result = service.preview(request);
+
+        // ----------------------------------------------------
+        // Then
+        // ----------------------------------------------------
+        assertThat(result.getWorkAllocations()).hasSize(2);
+
+        // First allocation must go to work 2
+        assertThat(result.getWorkAllocations().get(0).getWorkId())
+            .isEqualTo(2L);
+        assertThat(result.getWorkAllocations().get(0).getAllocatedAmount())
+            .isEqualByComparingTo("150.00");
+
+        // Second work receives nothing
+        assertThat(result.getWorkAllocations().get(1).getWorkId())
+            .isEqualTo(1L);
+        assertThat(result.getWorkAllocations().get(1).getAllocatedAmount())
+            .isEqualByComparingTo("0.00");
+    }
+    
+    @Test
+    void preview_with_empty_selection_allocates_nothing() {
+
+        // ----------------------------------------------------
+        // Given
+        // ----------------------------------------------------
+        Long clientId = 10L;
+
+        when(workRepository.findByIdInAndClient_Id(List.of(), clientId))
+            .thenReturn(List.of());
+
+        PaymentPreviewRequest request =
+            previewRequest(clientId, "100.00", List.of());
+
+        // ----------------------------------------------------
+        // When
+        // ----------------------------------------------------
+        PaymentPreviewResult result = service.preview(request);
+
+        // ----------------------------------------------------
+        // Then
+        // ----------------------------------------------------
+        assertThat(result.getTotalUnpaidSelected())
+            .isEqualByComparingTo("0.00");
+
+        assertThat(result.getTotalAllocated())
+            .isEqualByComparingTo("0.00");
+
+        assertThat(result.getRemainingUnallocated())
+            .isEqualByComparingTo("100.00");
+
+        assertThat(result.isRequiresBalanceConfirmation())
+            .isTrue();
+
+        assertThat(result.getWorkAllocations())
+            .isEmpty();
+    }
+    
+    @Test
+    void preview_with_zero_payment_is_rejected() {
+
+        PaymentPreviewRequest request =
+            previewRequest(10L, "0.00", List.of(1L));
+
+        assertThatThrownBy(() -> service.preview(request))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("payment amount");
+    }
+
+    @Test
+    void preview_with_negative_payment_is_rejected() {
+
+        PaymentPreviewRequest request =
+            previewRequest(10L, "-50.00", List.of(1L));
+
+        assertThatThrownBy(() -> service.preview(request))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("payment amount");
+    }
+
+    // ----------------------------------------------------
+    // Helper methods
+    // ----------------------------------------------------
+
+    private WorkEntity work(Long id) {
+        WorkEntity work = new WorkEntity();
+        work.setId(id);
+        return work;
+    }
+
+    private PaymentPreviewRequest previewRequest(
+            Long clientId,
+            String amount,
+            List<Long> workIds) {
+
+        PaymentPreviewRequest req = new PaymentPreviewRequest();
+        req.setClientId(clientId);
+        req.setPaymentAmount(new BigDecimal(amount));
+        req.setSelectedWorkIds(workIds);
+        return req;
+    }
+
+    private void stubPricing(Map<Long, BigDecimal> pricesByWorkId) {
+        when(workPricingService.resolveFinalPrice(any(PriceResolutionRequest.class)))
+            .thenAnswer(invocation -> {
+                PriceResolutionRequest req = invocation.getArgument(0);
+                BigDecimal price = pricesByWorkId.get(req.getWorkId());
+
+                if (price == null) {
+                    throw new IllegalStateException(
+                        "No price stubbed for workId " + req.getWorkId());
+                }
+
+                return new PriceResolution(
+                    price,
+                    BigDecimal.ZERO,
+                    price,
+                    "MXN",
+                    null,
+                    null,
+                    List.of()
+                );
+            });
+    }
+
+    private void stubPaidAmounts(Map<Long, BigDecimal> cashPaidByWorkId) {
+
+        when(paymentStatusQuery.findCashPaidAmountsByWorkIds(anyList()))
+            .thenReturn(cashPaidByWorkId);
+
+        when(paymentStatusQuery.findBalancePaidAmountsByWorkIds(anyList()))
+            .thenReturn(Map.of());
     }
 }

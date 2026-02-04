@@ -81,6 +81,7 @@ public class WorkController {
     // ==========================================================
     @GetMapping("/{id}")
     public ResponseEntity<WorkModel> getById(@PathVariable Long id) {
+    	log.info("Received request to get work by ID: {}", id);
         return ResponseEntity.ok(workService.getById(id));
     }
     
@@ -124,6 +125,7 @@ public class WorkController {
     // ==========================================================
     @GetMapping("/{id}/full")
     public ResponseEntity<FullWorkModel> getFullWork(@PathVariable Long id) {
+    	log.info("Received request to get full work by ID: {}", id);
         return ResponseEntity.ok(workService.getFullById(id));
     }
 }

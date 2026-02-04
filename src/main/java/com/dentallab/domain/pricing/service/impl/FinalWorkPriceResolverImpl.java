@@ -1,7 +1,8 @@
-package com.dentallab.domain.pricing.service;
+package com.dentallab.domain.pricing.service.impl;
 
 import com.dentallab.domain.pricing.model.*;
 import com.dentallab.domain.pricing.query.*;
+import com.dentallab.domain.pricing.service.FinalWorkPriceResolver;
 import com.dentallab.persistence.entity.WorkItemPriceOverrideEntity;
 
 import org.slf4j.Logger;
@@ -85,8 +86,13 @@ public class FinalWorkPriceResolverImpl implements FinalWorkPriceResolver {
     private static final Logger log =
             LoggerFactory.getLogger(FinalWorkPriceResolverImpl.class);
 
+    
     private final WorkPricingQuery pricingQuery;
+    
+    // Query to load the base price from WorkPriceEntity
     private final WorkPriceQuery workPriceQuery;
+    
+    // Query to load all overrides associated with a WorkPriceEntity
     private final WorkPriceOverrideQuery overrideQuery;
 
     public FinalWorkPriceResolverImpl(
@@ -136,7 +142,7 @@ public class FinalWorkPriceResolverImpl implements FinalWorkPriceResolver {
         WorkPricingView work = pricingQuery.findByWorkId(workId);
 
         if (work == null) {
-            log.error("Cannot resolve price: work not found (id={})", workId);
+            log.debug("Cannot resolve price: work not found (id={})", workId);
             throw new IllegalStateException(
                     "Cannot resolve price: work not found (id=" + workId + ")"
             );
@@ -221,4 +227,5 @@ public class FinalWorkPriceResolverImpl implements FinalWorkPriceResolver {
                 overrideInfos
         );
     }
+    
 }

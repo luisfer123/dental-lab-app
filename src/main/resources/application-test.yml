@@ -21,3 +21,4 @@ spring:
       org.hibernate.tool.schema: DEBUG
       org.hibernate.SQL: DEBUG
       org.hibernate.orm.jdbc.bind: TRACE
+      com.dentallab.domain.payment.service.*: DEBUG

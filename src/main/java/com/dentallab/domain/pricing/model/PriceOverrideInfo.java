@@ -35,4 +35,36 @@ public class PriceOverrideInfo {
     public Long getCreatedBy() {
         return createdBy;
     }
+    
+    @Override
+    public String toString() {
+		return "PriceOverrideInfo{" +
+				"adjustment=" + adjustment +
+				", reason='" + reason + '\'' +
+				", createdAt=" + createdAt +
+				", createdBy=" + createdBy +
+				'}';
+	}
+    
+    @Override
+    public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		PriceOverrideInfo that = (PriceOverrideInfo) o;
+
+		if (!adjustment.equals(that.adjustment)) return false;
+		if (!reason.equals(that.reason)) return false;
+		if (!createdAt.equals(that.createdAt)) return false;
+		return createdBy.equals(that.createdBy);
+	}
+    
+    @Override
+    public int hashCode() {
+		int result = adjustment.hashCode();
+		result = 31 * result + reason.hashCode();
+		result = 31 * result + createdAt.hashCode();
+		result = 31 * result + createdBy.hashCode();
+		return result;
+    }
 }

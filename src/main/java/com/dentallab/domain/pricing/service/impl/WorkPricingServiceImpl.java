@@ -1,4 +1,4 @@
-package com.dentallab.domain.pricing.service;
+package com.dentallab.domain.pricing.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.dentallab.domain.pricing.model.PriceResolution;
 import com.dentallab.domain.pricing.model.PriceResolutionRequest;
+import com.dentallab.domain.pricing.service.FinalWorkPriceResolver;
+import com.dentallab.domain.pricing.service.WorkPricingService;
 
 /**
  * <p>

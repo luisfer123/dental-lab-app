@@ -103,13 +103,13 @@ public interface WorkRepository
 				      COALESCE(
 				          (SELECT SUM(pa.amountApplied)
 				           FROM PaymentAllocationEntity pa
-				           WHERE pa.workId = w.id), 0
+				           WHERE pa.work.id = w.id), 0
 				      )
 				      +
 				      COALESCE(
 				          (SELECT SUM(ABS(cbm.amountChange))
 				           FROM ClientBalanceMovementEntity cbm
-				           WHERE cbm.workId = w.id
+				           WHERE cbm.work.id = w.id
 				             AND cbm.type = 'APPLY_WORK'), 0
 				      )
 				ORDER BY w.createdAt ASC

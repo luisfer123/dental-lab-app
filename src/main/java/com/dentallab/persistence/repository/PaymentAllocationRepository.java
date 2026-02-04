@@ -17,15 +17,15 @@ public interface PaymentAllocationRepository extends JpaRepository<PaymentAlloca
     @Query("""
         select coalesce(sum(pa.amountApplied), 0)
         from PaymentAllocationEntity pa
-        where pa.workId = :workId
+        where pa.work.id = :workId
     """)
     BigDecimal sumAppliedAmountByWorkId(Long workId);
 
     @Query("""
-        select pa.workId, coalesce(sum(pa.amountApplied), 0)
+        select pa.work.id, coalesce(sum(pa.amountApplied), 0)
         from PaymentAllocationEntity pa
-        where pa.workId in :workIds
-        group by pa.workId
+        where pa.work.id in :workIds
+        group by pa.work.id
     """)
     List<Object[]> sumAppliedAmountsByWorkIds(List<Long> workIds);
 }

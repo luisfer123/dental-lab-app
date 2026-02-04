@@ -1,8 +1,14 @@
 package com.dentallab.api.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import com.dentallab.domain.pricing.model.BasePriceExistsResponse;
 import com.dentallab.domain.pricing.model.BasePriceResult;
 import com.dentallab.domain.pricing.model.PriceResolution;
 import com.dentallab.domain.pricing.model.PriceResolutionRequest;
@@ -27,6 +33,8 @@ import com.dentallab.domain.pricing.service.WorkPricingService;
 @RestController
 @RequestMapping("/api/works/{workId}/pricing")
 public class WorkPricingController {
+	
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(WorkPricingController.class);
 
     private final WorkBasePriceService basePriceService;
     private final WorkPricingService pricingService;
@@ -95,6 +103,8 @@ public class WorkPricingController {
     @GetMapping("/final")
     public ResponseEntity<PriceResolution> getFinalPrice(
             @PathVariable Long workId) {
+    	
+    	log.info("Received request to get final price for work ID: {}", workId);
 
         PriceResolutionRequest request =
                 PriceResolutionRequest.forWork(workId);
@@ -103,5 +113,16 @@ public class WorkPricingController {
                 pricingService.resolveFinalPrice(request);
 
         return ResponseEntity.ok(resolution);
+    }
+    
+    @GetMapping("exists")
+    public ResponseEntity<BasePriceExistsResponse> checkPricingExists(
+    		@PathVariable Long workId) {
+    	    	
+    	boolean exists = basePriceService.existsBasePriceForWork(workId);
+    	
+    	log.info("Received request to check if pricing exists for work ID: {}. Work exists - {}", workId, exists);
+    	
+    	return ResponseEntity.ok(new BasePriceExistsResponse(exists));
     }
 }

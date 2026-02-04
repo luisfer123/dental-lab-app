@@ -10,10 +10,11 @@ spring:
 # Enable debug logging for development profile
 logging:
   level:
-    org.hibernate.orm.jdbc.bind: TRACE # show query bind parameter values
+    # org.hibernate.orm.jdbc.bind: TRACE # show query bind parameter values
     root: INFO
     com.dentallab: INFO
     com.dentallab.api.controller.WorkController: DEBUG
     com.dentallab.api.controller.WorkOrderController: DEBUG
+    com.dentallab.api.domain.pricing.*: DEBUG
 jwt:
   log-tokens: true

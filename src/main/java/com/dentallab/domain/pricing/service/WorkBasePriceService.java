@@ -8,4 +8,6 @@ public interface WorkBasePriceService {
     BasePriceResult previewBasePrice(PriceResolutionRequest request);
 
     void fixBasePrice(Long workId, BasePriceResult basePrice);
+    
+    Boolean existsBasePriceForWork(Long workId);
 }

@@ -19,6 +19,7 @@ import com.dentallab.domain.pricing.model.WorkPricingView;
 import com.dentallab.domain.pricing.query.WorkPriceOverrideQuery;
 import com.dentallab.domain.pricing.query.WorkPriceQuery;
 import com.dentallab.domain.pricing.query.WorkPricingQuery;
+import com.dentallab.domain.pricing.service.impl.FinalWorkPriceResolverImpl;
 import com.dentallab.persistence.entity.WorkItemPriceOverrideEntity;
 import com.dentallab.persistence.entity.WorkPriceEntity;
 

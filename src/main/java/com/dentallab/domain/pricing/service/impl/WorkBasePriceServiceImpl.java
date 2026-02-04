@@ -1,9 +1,6 @@
-package com.dentallab.domain.pricing.service;
+package com.dentallab.domain.pricing.service.impl;
 
 import java.util.Objects;
-
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,9 +9,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.dentallab.domain.pricing.model.BasePriceResult;
 import com.dentallab.domain.pricing.model.PriceResolutionRequest;
+import com.dentallab.domain.pricing.query.WorkPriceQuery;
+import com.dentallab.domain.pricing.service.FinalWorkPriceResolver;
+import com.dentallab.domain.pricing.service.WorkBasePriceService;
+import com.dentallab.domain.pricing.service.WorkTypePriceResolver;
 import com.dentallab.persistence.entity.WorkEntity;
 import com.dentallab.persistence.entity.WorkPriceEntity;
 import com.dentallab.persistence.repository.WorkPriceRepository;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 /**
  * <h2>WorkBasePriceServiceImpl</h2>
@@ -201,6 +205,9 @@ public class WorkBasePriceServiceImpl implements WorkBasePriceService {
      * A row in work_price represents an explicit pricing decision.
      */
     private final WorkPriceRepository workPriceRepository;
+    
+ // Query to load the base price from WorkPriceEntity
+    private final WorkPriceQuery workPriceQuery;
 
     /**
      * Used only to obtain a lightweight reference to WorkEntity
@@ -211,12 +218,14 @@ public class WorkBasePriceServiceImpl implements WorkBasePriceService {
 
     public WorkBasePriceServiceImpl(
             WorkTypePriceResolver workTypePriceResolver,
-            WorkPriceRepository workPriceRepository) {
+            WorkPriceRepository workPriceRepository,
+            WorkPriceQuery workPriceQuery) {
 
         this.workTypePriceResolver =
                 Objects.requireNonNull(workTypePriceResolver);
         this.workPriceRepository =
                 Objects.requireNonNull(workPriceRepository);
+        this.workPriceQuery = Objects.requireNonNull(workPriceQuery);
     }
 
     /**
@@ -402,4 +411,12 @@ public class WorkBasePriceServiceImpl implements WorkBasePriceService {
                 basePrice.getPriceGroup()
         );
     }
+    
+    @Override
+    @Transactional()
+    public Boolean existsBasePriceForWork(Long workId) {
+    	boolean exists = workPriceQuery.findByWorkId(workId).isPresent();
+    	log.debug("Checking existence of base price for workId={}. Work exists - {}", workId, exists);
+		return exists;
+	}
 }

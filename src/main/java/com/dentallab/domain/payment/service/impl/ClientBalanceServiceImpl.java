@@ -15,8 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.dentallab.domain.payment.service.ClientBalanceService;
 import com.dentallab.persistence.entity.ClientBalanceEntity;
 import com.dentallab.persistence.entity.ClientBalanceMovementEntity;
+import com.dentallab.persistence.entity.WorkEntity;
 import com.dentallab.persistence.repository.ClientBalanceMovementRepository;
 import com.dentallab.persistence.repository.ClientBalanceRepository;
+import com.dentallab.persistence.repository.WorkRepository;
 
 /**
  * <p>
@@ -46,13 +48,16 @@ public class ClientBalanceServiceImpl implements ClientBalanceService {
 
     private final ClientBalanceRepository clientBalanceRepository;
     private final ClientBalanceMovementRepository movementRepository;
+    private final WorkRepository workRepository;
 
     public ClientBalanceServiceImpl(
             ClientBalanceRepository clientBalanceRepository,
-            ClientBalanceMovementRepository movementRepository
+            ClientBalanceMovementRepository movementRepository,
+            WorkRepository workRepository
     ) {
         this.clientBalanceRepository = clientBalanceRepository;
         this.movementRepository = movementRepository;
+        this.workRepository = workRepository;
     }
 
     /**
@@ -110,12 +115,18 @@ public class ClientBalanceServiceImpl implements ClientBalanceService {
         assertBalanceActive(cb);
 
         // 1) Create ledger movement (positive)
+        WorkEntity work = null;
+        if (workId != null) {
+            work = workRepository.findById(workId)
+                .orElseThrow(() -> new IllegalArgumentException("Work not found: " + workId));
+        }
+        
         ClientBalanceMovementEntity m = new ClientBalanceMovementEntity();
         m.setClientId(clientId);
         m.setAmountChange(credit);
         m.setType(type);
         m.setPaymentId(paymentId);
-        m.setWorkId(workId);
+        m.setWork(work);
         m.setNote(note);
         m.setCreatedAt(Instant.now());
         movementRepository.save(m);
@@ -163,12 +174,15 @@ public class ClientBalanceServiceImpl implements ClientBalanceService {
         }
 
         // 1) Create ledger movement (negative)
+        WorkEntity work = workRepository.findById(workId)
+        	    .orElseThrow(() -> new IllegalArgumentException("Work not found: " + workId));
+        
         ClientBalanceMovementEntity m = new ClientBalanceMovementEntity();
         m.setClientId(clientId);
         m.setAmountChange(debit.negate()); // APPLY_WORK must be negative
         m.setType("APPLY_WORK");
         m.setPaymentId(paymentId);
-        m.setWorkId(workId);
+        m.setWork(work);
         m.setNote(note);
         m.setCreatedAt(Instant.now());
         movementRepository.save(m);

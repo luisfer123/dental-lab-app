@@ -36,8 +36,9 @@ public class ClientBalanceMovementEntity {
     @Column(name = "payment_id")
     private Long paymentId;
 
-    @Column(name = "work_id")
-    private Long workId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "work_id")
+    private WorkEntity work;
 
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
@@ -101,12 +102,12 @@ public class ClientBalanceMovementEntity {
         this.paymentId = paymentId;
     }
 
-    public Long getWorkId() {
-        return workId;
+    public WorkEntity getWork() {
+        return work;
     }
 
-    public void setWorkId(Long workId) {
-        this.workId = workId;
+    public void setWork(WorkEntity workId) {
+        this.work = workId;
     }
 
     public Instant getCreatedAt() {
@@ -148,7 +149,7 @@ public class ClientBalanceMovementEntity {
                 ", currency='" + currency + '\'' +
                 ", type='" + type + '\'' +
                 ", paymentId=" + paymentId +
-                ", workId=" + workId +
+                ", workId=" + work.getId() +
                 ", createdAt=" + createdAt +
                 '}';
     }

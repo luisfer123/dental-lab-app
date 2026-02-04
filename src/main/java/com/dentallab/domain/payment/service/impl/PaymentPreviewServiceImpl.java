@@ -3,11 +3,12 @@ package com.dentallab.domain.payment.service.impl;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,6 +109,11 @@ public class PaymentPreviewServiceImpl implements PaymentPreviewService {
         if (request.getSelectedWorkIds().isEmpty()) {
             log.warn("Payment preview requested with no selected works");
         }
+        
+        if (request.getPaymentAmount() == null ||
+    	    request.getPaymentAmount().compareTo(BigDecimal.ZERO) <= 0) {
+    	    throw new IllegalArgumentException("payment amount must be positive");
+    	}
 
         log.debug(
                 "Starting payment preview: clientId={}, paymentAmount={}, selectedWorkIds={}",
@@ -141,7 +147,24 @@ public class PaymentPreviewServiceImpl implements PaymentPreviewService {
         }
 
         // Deterministic ordering: allocations are applied in a stable order.
-        works.sort(Comparator.comparing(WorkEntity::getId));
+     // ------------------------------------------------------------
+     // Enforce user-selected ordering (critical for allocation)
+     // ------------------------------------------------------------
+     Map<Long, WorkEntity> worksById = works.stream()
+             .collect(Collectors.toMap(
+                     WorkEntity::getId,
+                     Function.identity()
+             ));
+
+     List<WorkEntity> orderedWorks = new ArrayList<>();
+
+     for (Long workId : request.getSelectedWorkIds()) {
+         WorkEntity work = worksById.get(workId);
+         if (work != null) {
+             orderedWorks.add(work);
+         }
+     }
+
 
         // ------------------------------------------------------------
         // 2. Load already-paid amounts (cash + balance)
@@ -167,7 +190,7 @@ public class PaymentPreviewServiceImpl implements PaymentPreviewService {
         // ------------------------------------------------------------
         // 3. Allocation loop (Option A: automatic allocation)
         // ------------------------------------------------------------
-        for (WorkEntity work : works) {
+        for (WorkEntity work : orderedWorks) {
 
             log.debug("Resolving price for workId={}", work.getId());
 

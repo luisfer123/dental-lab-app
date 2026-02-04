@@ -159,7 +159,17 @@ public class WorkPricingQueryDispatcher implements WorkPricingQuery {
         // -----------------------------------------------------------------
         if ("FIXED_PROSTHESIS".equals(family.getCode())) {
             log.debug("Using FixedProsthesisPricingQuery for workId={}", workId);
-            return fixedQuery.findFixedPricing(workId);
+
+            WorkPricingView view = fixedQuery.findFixedPricing(workId);
+
+            if (view == null) {
+                throw new IllegalStateException(
+                    "Pricing parameters not found for workId=" + workId +
+                    " (missing extension row?)"
+                );
+            }
+
+            return view;
         }
 
         // -----------------------------------------------------------------

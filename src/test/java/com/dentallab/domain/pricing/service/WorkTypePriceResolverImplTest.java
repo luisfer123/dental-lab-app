@@ -19,6 +19,7 @@ import com.dentallab.domain.pricing.model.PriceResolutionRequest;
 import com.dentallab.domain.pricing.model.WorkPricingView;
 import com.dentallab.domain.pricing.query.WorkPricingQuery;
 import com.dentallab.domain.pricing.query.WorkTypePriceQuery;
+import com.dentallab.domain.pricing.service.impl.WorkTypePriceResolverImpl;
 import com.dentallab.persistence.entity.WorkTypePriceEntity;
 
 class WorkTypePriceResolverImplTest {

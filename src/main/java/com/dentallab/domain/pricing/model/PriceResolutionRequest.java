@@ -61,4 +61,28 @@ public class PriceResolutionRequest {
     public String getPriceGroup() {
         return priceGroup;
     }
+    
+    @Override
+    public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		PriceResolutionRequest that = (PriceResolutionRequest) o;
+		return workId.equals(that.workId) &&
+				Objects.equals(pricingDate, that.pricingDate) &&
+				Objects.equals(priceGroup, that.priceGroup);
+	}
+    
+    @Override
+	public int hashCode() {
+		return Objects.hash(workId, pricingDate, priceGroup);
+	}
+    
+    @Override
+    public String toString() {
+		return "PriceResolutionRequest{" +
+				"workId=" + workId +
+				", pricingDate=" + pricingDate +
+				", priceGroup='" + priceGroup + '\'' +
+				'}';
+	}
 }

@@ -1,15 +1,27 @@
 package com.dentallab.persistence.entity;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Objects;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(
     name = "payment_allocation",
     indexes = {
-        @Index(name = "idx_pa_work", columnList = "work_id")
+        @Index(name = "idx_pa_work", columnList = "work_id"),
+        @Index(name = "idx_pa_payment", columnList = "payment_id")
     }
 )
 public class PaymentAllocationEntity {
@@ -19,11 +31,13 @@ public class PaymentAllocationEntity {
     @Column(name = "allocation_id")
     private Long allocationId;
 
-    @Column(name = "payment_id", nullable = false)
-    private Long paymentId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "payment_id", nullable = false)
+    private PaymentEntity payment;
 
-    @Column(name = "work_id", nullable = false)
-    private Long workId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "work_id", nullable = false)
+    private WorkEntity work;
 
     @Column(name = "amount_applied", nullable = false, precision = 12, scale = 2)
     private BigDecimal amountApplied;
@@ -33,33 +47,31 @@ public class PaymentAllocationEntity {
 
     @PrePersist
     protected void onCreate() {
-        if (this.createdAt == null) this.createdAt = Instant.now();
+        if (this.createdAt == null) {
+            this.createdAt = Instant.now();
+        }
     }
 
-    // -------- getters / setters --------
+    // getters / setters
 
     public Long getAllocationId() {
         return allocationId;
     }
 
-    public void setAllocationId(Long allocationId) {
-        this.allocationId = allocationId;
+    public PaymentEntity getPayment() {
+        return payment;
     }
 
-    public Long getPaymentId() {
-        return paymentId;
+    public void setPayment(PaymentEntity payment) {
+        this.payment = payment;
     }
 
-    public void setPaymentId(Long paymentId) {
-        this.paymentId = paymentId;
+    public WorkEntity getWork() {
+        return work;
     }
 
-    public Long getWorkId() {
-        return workId;
-    }
-
-    public void setWorkId(Long workId) {
-        this.workId = workId;
+    public void setWork(WorkEntity work) {
+        this.work = work;
     }
 
     public BigDecimal getAmountApplied() {
@@ -74,11 +86,7 @@ public class PaymentAllocationEntity {
         return createdAt;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    // -------- equals / hashCode --------
+    // equals / hashCode by id
 
     @Override
     public boolean equals(Object o) {
@@ -90,16 +98,5 @@ public class PaymentAllocationEntity {
     @Override
     public int hashCode() {
         return Objects.hashCode(allocationId);
-    }
-
-    @Override
-    public String toString() {
-        return "PaymentAllocationEntity{" +
-                "allocationId=" + allocationId +
-                ", paymentId=" + paymentId +
-                ", workId=" + workId +
-                ", amountApplied=" + amountApplied +
-                ", createdAt=" + createdAt +
-                '}';
     }
 }
